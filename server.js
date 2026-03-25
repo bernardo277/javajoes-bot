@@ -3,12 +3,14 @@ const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
 
-// ─── CARREGAR .env MANUALMENTE ────────────────────────────────────────────────
+// ─── CARREGAR .env MANUALMENTE (apenas se existir, ex: desenvolvimento local) ──
 const envPath = path.join(__dirname, '.env');
-fs.readFileSync(envPath, 'utf8').split('\n').forEach(line => {
-  const [key, val] = line.split('=');
-  if (key && val) process.env[key.trim()] = val.trim();
-});
+if (fs.existsSync(envPath)) {
+  fs.readFileSync(envPath, 'utf8').split('\n').forEach(line => {
+    const [key, val] = line.split('=');
+    if (key && val) process.env[key.trim()] = val.trim();
+  });
+}
 
 const INSTANCE_ID = process.env.ZAPI_INSTANCE_ID;
 const TOKEN = process.env.ZAPI_TOKEN;
