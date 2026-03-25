@@ -186,7 +186,10 @@ function normalize(text) {
 }
 
 function has(text, ...words) {
-  return words.some(w => text.includes(w));
+  return words.some(w => {
+    const escaped = w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return new RegExp(`(^|\\s)${escaped}(\\s|$)`).test(text);
+  });
 }
 
 function isSegunda(text) {
