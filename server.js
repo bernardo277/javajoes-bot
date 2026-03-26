@@ -35,7 +35,9 @@ Meu nome é Giovana, fico feliz em te atender! Como posso te ajudar hoje?
 2 - Valores e funcionamento
 3 - Reservas
 4 - Localização e endereço
-5 - Informações sobre o rodízio e à la carte`,
+5 - Informações sobre o rodízio e à la carte
+6 - Falar com atendimento humano
+7 - Alterar uma reserva`,
 
   op1: `O Java Joe's é uma pizzaria com ambiente familiar e aconchegante, ideal para curtir com amigos e família. Nosso salão tem capacidade para cerca de 120 pessoas, com área kids de 18m² de muita diversão, oferecemos uma experiência completa com pizzas, massas, bebidas e sobremesas. 🍕
 
@@ -148,7 +150,8 @@ Qualquer coisa, é só chamar. Até a próxima!
 0 - Voltar ao menu principal`,
 
   atendente: `Claro! Vou te conectar com um de nossos atendentes agora. 👋
-Um momento, por favor. Nossa equipe retornará em breve.`,
+Um momento — nossa equipe humana assumirá essa conversa em breve.
+Enquanto isso, fique à vontade para aguardar aqui. 😊`,
 
   menuOpcoes: `Posso te ajudar com:
 
@@ -157,6 +160,8 @@ Um momento, por favor. Nossa equipe retornará em breve.`,
 3 - Reservas
 4 - Localização e endereço
 5 - Informações sobre o rodízio e à la carte
+6 - Falar com atendimento humano
+7 - Alterar uma reserva
 0 - Voltar ao menu principal`,
 
   fallback: `Hmm, não sei se consigo te ajudar com isso. 😊
@@ -167,6 +172,8 @@ Mas posso te ajudar com:
 3 - Reservas
 4 - Localização e endereço
 5 - Informações sobre o rodízio e à la carte
+6 - Falar com atendimento humano
+7 - Alterar uma reserva
 0 - Voltar ao menu principal`,
 
   inatividade: `Parece que você se afastou! 😊 Encerrando sua sessão por inatividade. Quando quiser continuar é só mandar uma mensagem!`,
@@ -324,12 +331,14 @@ function avancarReserva(state) {
 }
 
 function rotearMenuNumero(msg, state) {
-  if (msg === '0') { state.step = 'menu'; state.reserva = {}; return SCRIPTS.boasVindas; }
+  if (msg === '0') { state.step = 'menu'; state.reserva = {}; state.alteracao = {}; return SCRIPTS.boasVindas; }
   if (msg === '1') { state.step = 'menu'; return SCRIPTS.op1; }
   if (msg === '2') { state.step = 'menu'; return SCRIPTS.op2; }
   if (msg === '3') { state.step = 'reserva_dados'; state.reserva = {}; return SCRIPTS.op3_info; }
   if (msg === '4') { state.step = 'menu'; return SCRIPTS.op4; }
   if (msg === '5') { state.step = 'menu'; return SCRIPTS.op5; }
+  if (msg === '6') { state.step = 'atendente_humano'; return SCRIPTS.atendente; }
+  if (msg === '7') { state.step = 'alterar_busca'; state.alteracao = {}; return `Para localizar sua reserva, me informe:\n• Seu nome completo\n• Data da reserva\n_(Digite 0 para voltar ao menu principal)_`; }
   return null;
 }
 
@@ -400,6 +409,56 @@ async function salvarReservaSupabase(nome, whatsapp, dataISO, pessoas) {
   }
 }
 
+async function buscarReserva(nome, dataISO) {
+  try {
+    const resp = await axios.get(
+      `${SUPABASE_URL}/rest/v1/reservas?data=eq.${dataISO}&select=id,nome,data,pessoas`,
+      { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } }
+    );
+    if (!resp.data || resp.data.length === 0) return null;
+    const nomeNorm = nome.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const match = resp.data.find(r => {
+      const rNorm = r.nome.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      return rNorm.includes(nomeNorm) || nomeNorm.includes(rNorm) || rNorm.split(' ')[0] === nomeNorm.split(' ')[0];
+    });
+    return match || null;
+  } catch (err) {
+    console.error('Erro ao buscar reserva:', err.message);
+    return null;
+  }
+}
+
+async function atualizarReserva(id, novasPessoas) {
+  try {
+    await axios.patch(
+      `${SUPABASE_URL}/rest/v1/reservas?id=eq.${id}`,
+      { pessoas: novasPessoas },
+      { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' } }
+    );
+    console.log(`[${new Date().toLocaleTimeString()}] ✏️ Reserva ${id} atualizada: ${novasPessoas} pessoas`);
+    return true;
+  } catch (err) {
+    console.error('Erro ao atualizar reserva:', err.response?.data || err.message);
+    return false;
+  }
+}
+
+async function verificarDisponibilidadeAlteracao(dataISO, pessoasAntigas, pessoasNovas) {
+  try {
+    const resp = await axios.get(
+      `${SUPABASE_URL}/rest/v1/reservas?data=eq.${dataISO}&select=pessoas`,
+      { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } }
+    );
+    const totalAtual = resp.data.reduce((sum, r) => sum + (r.pessoas || 0), 0);
+    const totalNovo = totalAtual - pessoasAntigas + pessoasNovas;
+    const vagasRestantes = 100 - totalAtual + pessoasAntigas;
+    return { disponivel: totalNovo <= 100, vagasRestantes };
+  } catch (err) {
+    console.error('Erro ao verificar disponibilidade:', err.message);
+    return { disponivel: true, vagasRestantes: 100 };
+  }
+}
+
 // ─── BOT ─────────────────────────────────────────────────────────────────────
 
 async function getBotReply(userMsg, state) {
@@ -409,7 +468,58 @@ async function getBotReply(userMsg, state) {
   if (msg === '0') {
     state.step = 'menu';
     state.reserva = {};
+    state.alteracao = {};
     return SCRIPTS.boasVindas;
+  }
+
+  // Bot silencioso durante atendimento humano
+  if (state.step === 'atendente_humano' || state.step === 'humano_ativo') return null;
+
+  // Fluxo de alteração de reserva
+  if (state.step === 'alterar_busca') {
+    const nome = extrairNome(userMsg) || userMsg.trim();
+    const data = extrairData(userMsg) || userMsg.trim();
+    const dataISO = converterDataParaISO(data);
+    if (!dataISO) {
+      return `Não consegui identificar a data. Por favor, informe nome e data (ex: *Maria Silva, 15/04*).\n_(Digite 0 para voltar ao menu principal)_`;
+    }
+    const reserva = await buscarReserva(nome, dataISO);
+    if (!reserva) {
+      return `Não encontrei nenhuma reserva com essas informações. 😕\nVerifique o nome e a data e tente novamente.\n_(Digite 0 para voltar ao menu principal)_`;
+    }
+    state.alteracao = { id: reserva.id, nome: reserva.nome, data: reserva.data, pessoas: reserva.pessoas };
+    state.step = 'alterar_aguarda_pessoas';
+    return `✅ Reserva encontrada!\n👤 Nome: ${reserva.nome}\n📅 Data: ${reserva.data}\n👥 Pessoas atuais: ${reserva.pessoas}\n\nPara quantas pessoas deseja alterar?\n_(Digite 0 para voltar ao menu principal)_`;
+  }
+
+  if (state.step === 'alterar_aguarda_pessoas') {
+    const p = extrairPessoas(userMsg);
+    if (!p) return `Não entendi. Me informe o novo número de pessoas (mínimo 4, máximo 50).\n_(Digite 0 para voltar ao menu principal)_`;
+    const novas = parseInt(p);
+    if (novas < 4) return SCRIPTS.minimoNaoAtingido;
+    if (novas > 50) return SCRIPTS.maximoUltrapassado;
+    const { disponivel, vagasRestantes } = await verificarDisponibilidadeAlteracao(state.alteracao.data, state.alteracao.pessoas, novas);
+    if (!disponivel) {
+      return `Que pena! 😕 A data só tem *${vagasRestantes} vagas* disponíveis, não é possível aumentar para ${novas} pessoas.\n_(Digite 0 para voltar ao menu principal)_`;
+    }
+    state.alteracao.novasPessoas = novas;
+    state.step = 'alterar_confirm';
+    return `Confirme a alteração:\n👤 Nome: ${state.alteracao.nome}\n📅 Data: ${state.alteracao.data}\n👥 De *${state.alteracao.pessoas}* para *${novas} pessoas*\n\n1 - Confirmar\n2 - Cancelar\n_(Digite 0 para voltar ao menu principal)_`;
+  }
+
+  if (state.step === 'alterar_confirm') {
+    if (msg === '1' || has(msg, 'sim', 'confirmar', 'ok', 'pode')) {
+      const novasPessoas = state.alteracao.novasPessoas;
+      await atualizarReserva(state.alteracao.id, novasPessoas);
+      state.step = 'menu';
+      state.alteracao = {};
+      return `✅ Reserva alterada com sucesso!\n👥 Nova quantidade: *${novasPessoas} pessoas*\nTe esperamos no Java Joe's! 🍕\n\n0 - Voltar ao menu principal`;
+    }
+    if (msg === '2' || has(msg, 'cancelar', 'nao')) {
+      state.step = 'menu';
+      state.alteracao = {};
+      return SCRIPTS.boasVindas;
+    }
   }
 
   // Escape de fluxo de reserva via número de menu
@@ -542,8 +652,14 @@ async function getBotReply(userMsg, state) {
   }
 
   if (has(msg, 'atendente', 'humano', 'pessoa real', 'falar com alguem', 'atendimento humano')) {
-    state.step = 'menu';
+    state.step = 'atendente_humano';
     return SCRIPTS.atendente;
+  }
+
+  if (has(msg, 'alterar reserva', 'mudar reserva', 'aumentar reserva', 'alterar minha reserva')) {
+    state.step = 'alterar_busca';
+    state.alteracao = {};
+    return `Para localizar sua reserva, me informe:\n• Seu nome completo\n• Data da reserva\n_(Digite 0 para voltar ao menu principal)_`;
   }
 
   if (has(msg, 'duvida', 'pergunta', 'quero saber', 'pode me ajudar', 'me ajuda', 'preciso de ajuda', 'ajuda')) {
@@ -584,7 +700,7 @@ async function enviarMensagem(phone, message) {
 // ─── TIMER DE INATIVIDADE (30 minutos) ────────────────────────────────────────
 
 const INATIVIDADE_MS = 30 * 60 * 1000;
-const STEPS_ATIVOS = ['reserva_dados', 'reserva_aguarda_nome', 'reserva_aguarda_data', 'reserva_aguarda_pessoas', 'reserva_confirm', 'cancelar_dados'];
+const STEPS_ATIVOS = ['reserva_dados', 'reserva_aguarda_nome', 'reserva_aguarda_data', 'reserva_aguarda_pessoas', 'reserva_confirm', 'cancelar_dados', 'alterar_busca', 'alterar_aguarda_pessoas', 'alterar_confirm'];
 
 setInterval(async () => {
   const agora = Date.now();
@@ -605,7 +721,17 @@ app.post('/webhook', async (req, res) => {
 
   const body = req.body;
 
-  if (body?.isStatusReply || body?.fromMe || body?.message?.fromMe) return;
+  if (body?.isStatusReply) return;
+
+  // Detectar quando humano assume a conversa (mensagem enviada pelo dono)
+  if (body?.fromMe || body?.message?.fromMe) {
+    const phoneAlvo = body?.phone || body?.message?.phone;
+    if (phoneAlvo && userStates[phoneAlvo]) {
+      userStates[phoneAlvo].step = 'humano_ativo';
+      console.log(`[${new Date().toLocaleTimeString()}] 👤 Humano assumiu conversa com ${phoneAlvo}`);
+    }
+    return;
+  }
 
   const phone = body?.phone || body?.message?.phone;
   const text = body?.message?.text?.message || body?.text?.message || body?.text;
@@ -620,7 +746,7 @@ app.post('/webhook', async (req, res) => {
 
   const reply = await getBotReply(text, state);
 
-  await enviarMensagem(phone, reply);
+  if (reply) await enviarMensagem(phone, reply);
 });
 
 // ─── ROTA DE TESTE ────────────────────────────────────────────────────────────
