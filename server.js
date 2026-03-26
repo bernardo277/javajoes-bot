@@ -36,8 +36,8 @@ Meu nome é Giovana, fico feliz em te atender! Como posso te ajudar hoje?
 3 - Reservas
 4 - Localização e endereço
 5 - Informações sobre o rodízio e à la carte
-6 - Falar com atendimento humano
-7 - Alterar uma reserva`,
+6 - Alterar uma reserva
+7 - Falar com um dos nossos atendentes`,
 
   op1: `O Java Joe's é uma pizzaria com ambiente familiar e aconchegante, ideal para curtir com amigos e família. Nosso salão tem capacidade para cerca de 120 pessoas, com área kids de 18m² de muita diversão, oferecemos uma experiência completa com pizzas, massas, bebidas e sobremesas. 🍕
 
@@ -160,8 +160,8 @@ Enquanto isso, fique à vontade para aguardar aqui. 😊`,
 3 - Reservas
 4 - Localização e endereço
 5 - Informações sobre o rodízio e à la carte
-6 - Falar com atendimento humano
-7 - Alterar uma reserva
+6 - Alterar uma reserva
+7 - Falar com um dos nossos atendentes
 0 - Voltar ao menu principal`,
 
   fallback: `Hmm, não sei se consigo te ajudar com isso. 😊
@@ -172,8 +172,8 @@ Mas posso te ajudar com:
 3 - Reservas
 4 - Localização e endereço
 5 - Informações sobre o rodízio e à la carte
-6 - Falar com atendimento humano
-7 - Alterar uma reserva
+6 - Alterar uma reserva
+7 - Falar com um dos nossos atendentes
 0 - Voltar ao menu principal`,
 
   inatividade: `Parece que você se afastou! 😊 Encerrando sua sessão por inatividade. Quando quiser continuar é só mandar uma mensagem!`,
@@ -337,8 +337,8 @@ function rotearMenuNumero(msg, state) {
   if (msg === '3') { state.step = 'reserva_dados'; state.reserva = {}; return SCRIPTS.op3_info; }
   if (msg === '4') { state.step = 'menu'; return SCRIPTS.op4; }
   if (msg === '5') { state.step = 'menu'; return SCRIPTS.op5; }
-  if (msg === '6') { state.step = 'atendente_humano'; return SCRIPTS.atendente; }
-  if (msg === '7') { state.step = 'alterar_busca'; state.alteracao = {}; return `Para localizar sua reserva, me informe:\n• Seu nome completo\n• Data da reserva\n_(Digite 0 para voltar ao menu principal)_`; }
+  if (msg === '6') { state.step = 'alterar_dados'; state.alteracao = {}; return `Para alterar sua reserva, me informe em uma mensagem:\n• Seu nome completo\n• Data da reserva\n• Nova quantidade de pessoas`; }
+  if (msg === '7') { state.step = 'atendente_humano'; return SCRIPTS.atendente; }
   return null;
 }
 
@@ -481,51 +481,30 @@ async function getBotReply(userMsg, state) {
     state.humanoAssumiuAt = null;
   }
 
-  // Fluxo de alteração de reserva
-  if (state.step === 'alterar_busca') {
+  // Fluxo de alteração de reserva (tudo em uma mensagem)
+  if (state.step === 'alterar_dados') {
     const nome = extrairNome(userMsg) || userMsg.trim();
-    const data = extrairData(userMsg) || userMsg.trim();
+    const data = extrairData(userMsg);
+    const pessoas = extrairPessoas(userMsg);
     const dataISO = converterDataParaISO(data);
-    if (!dataISO) {
-      return `Não consegui identificar a data. Por favor, informe nome e data (ex: *Maria Silva, 15/04*).\n_(Digite 0 para voltar ao menu principal)_`;
-    }
-    const reserva = await buscarReserva(nome, dataISO);
-    if (!reserva) {
-      return `Não encontrei nenhuma reserva com essas informações. 😕\nVerifique o nome e a data e tente novamente.\n_(Digite 0 para voltar ao menu principal)_`;
-    }
-    state.alteracao = { id: reserva.id, nome: reserva.nome, data: reserva.data, pessoas: reserva.pessoas };
-    state.step = 'alterar_aguarda_pessoas';
-    return `✅ Reserva encontrada!\n👤 Nome: ${reserva.nome}\n📅 Data: ${reserva.data}\n👥 Pessoas atuais: ${reserva.pessoas}\n\nPara quantas pessoas deseja alterar?\n_(Digite 0 para voltar ao menu principal)_`;
-  }
 
-  if (state.step === 'alterar_aguarda_pessoas') {
-    const p = extrairPessoas(userMsg);
-    if (!p) return `Não entendi. Me informe o novo número de pessoas (mínimo 4, máximo 50).\n_(Digite 0 para voltar ao menu principal)_`;
-    const novas = parseInt(p);
-    if (novas < 4) return SCRIPTS.minimoNaoAtingido;
-    if (novas > 50) return SCRIPTS.maximoUltrapassado;
-    const { disponivel, vagasRestantes } = await verificarDisponibilidadeAlteracao(state.alteracao.data, state.alteracao.pessoas, novas);
-    if (!disponivel) {
-      return `Que pena! 😕 A data só tem *${vagasRestantes} vagas* disponíveis, não é possível aumentar para ${novas} pessoas.\n_(Digite 0 para voltar ao menu principal)_`;
+    // Tenta alterar silenciosamente se tiver todas as infos
+    if (dataISO && pessoas) {
+      const novas = parseInt(pessoas);
+      const reserva = await buscarReserva(nome, dataISO);
+      if (reserva && novas >= 4 && novas <= 50) {
+        const { disponivel } = await verificarDisponibilidadeAlteracao(dataISO, reserva.pessoas, novas);
+        if (disponivel) {
+          await atualizarReserva(reserva.id, novas);
+          console.log(`[${new Date().toLocaleTimeString()}] ✏️ Alteração silenciosa: ${reserva.nome} | ${dataISO} | ${novas} pessoas`);
+        }
+      }
     }
-    state.alteracao.novasPessoas = novas;
-    state.step = 'alterar_confirm';
-    return `Confirme a alteração:\n👤 Nome: ${state.alteracao.nome}\n📅 Data: ${state.alteracao.data}\n👥 De *${state.alteracao.pessoas}* para *${novas} pessoas*\n\n1 - Confirmar\n2 - Cancelar\n_(Digite 0 para voltar ao menu principal)_`;
-  }
 
-  if (state.step === 'alterar_confirm') {
-    if (msg === '1' || has(msg, 'sim', 'confirmar', 'ok', 'pode')) {
-      const novasPessoas = state.alteracao.novasPessoas;
-      await atualizarReserva(state.alteracao.id, novasPessoas);
-      state.step = 'menu';
-      state.alteracao = {};
-      return `✅ Reserva alterada com sucesso!\n👥 Nova quantidade: *${novasPessoas} pessoas*\nTe esperamos no Java Joe's! 🍕\n\n0 - Voltar ao menu principal`;
-    }
-    if (msg === '2' || has(msg, 'cancelar', 'nao')) {
-      state.step = 'menu';
-      state.alteracao = {};
-      return SCRIPTS.boasVindas;
-    }
+    // Independente do resultado, direciona para atendente
+    state.step = 'atendente_humano';
+    state.alteracao = {};
+    return `Ok, em breve um dos nossos atendentes irá te atender para confirmar sua alteração.\nObrigada pelo contato! 😊`;
   }
 
   // Escape de fluxo de reserva via número de menu
@@ -663,9 +642,9 @@ async function getBotReply(userMsg, state) {
   }
 
   if (has(msg, 'alterar reserva', 'mudar reserva', 'aumentar reserva', 'alterar minha reserva')) {
-    state.step = 'alterar_busca';
+    state.step = 'alterar_dados';
     state.alteracao = {};
-    return `Para localizar sua reserva, me informe:\n• Seu nome completo\n• Data da reserva\n_(Digite 0 para voltar ao menu principal)_`;
+    return `Para alterar sua reserva, me informe em uma mensagem:\n• Seu nome completo\n• Data da reserva\n• Nova quantidade de pessoas`;
   }
 
   if (has(msg, 'duvida', 'pergunta', 'quero saber', 'pode me ajudar', 'me ajuda', 'preciso de ajuda', 'ajuda')) {
@@ -706,7 +685,7 @@ async function enviarMensagem(phone, message) {
 // ─── TIMER DE INATIVIDADE (30 minutos) ────────────────────────────────────────
 
 const INATIVIDADE_MS = 30 * 60 * 1000;
-const STEPS_ATIVOS = ['reserva_dados', 'reserva_aguarda_nome', 'reserva_aguarda_data', 'reserva_aguarda_pessoas', 'reserva_confirm', 'cancelar_dados', 'alterar_busca', 'alterar_aguarda_pessoas', 'alterar_confirm'];
+const STEPS_ATIVOS = ['reserva_dados', 'reserva_aguarda_nome', 'reserva_aguarda_data', 'reserva_aguarda_pessoas', 'reserva_confirm', 'cancelar_dados', 'alterar_dados'];
 
 setInterval(async () => {
   const agora = Date.now();
