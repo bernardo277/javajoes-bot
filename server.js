@@ -438,9 +438,9 @@ async function getBotReply(userMsg, state) {
           state.step = 'reserva_aguarda_data';
           state.reserva = { ...state.reserva, data: null };
           if (vagasRestantes > 0) {
-            return `Que pena! A data ${dataNome} só tem ${vagasRestantes} vagas disponíveis e você pediu ${qtd} pessoas. 😕\nEscolha outra data ou reduza o número de pessoas!\n_(Digite 0 para voltar ao menu principal)_`;
+            return `Que pena! 😕 A data *${dataNome}* só tem *${vagasRestantes} vagas* disponíveis e você pediu ${qtd} pessoas.\n\nVou te direcionar para um atendente humano que poderá te ajudar a encontrar a melhor solução! 👋\n\nOu se preferir, escolha outra data para sua reserva.\n_(Digite 0 para voltar ao menu principal)_`;
           }
-          return `Que pena! A data ${dataNome} já está com lotação esgotada (máximo 100 pessoas por dia). 😕\nQuer escolher outra data?\n_(Digite 0 para voltar ao menu principal)_`;
+          return `Que pena! 😕 A data *${dataNome}* já está com lotação esgotada.\n\nVou te direcionar para um atendente humano que poderá te ajudar a encontrar a melhor solução! 👋\n\nOu se preferir, escolha outra data para sua reserva.\n_(Digite 0 para voltar ao menu principal)_`;
         }
       }
 
