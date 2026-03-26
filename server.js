@@ -473,7 +473,13 @@ async function getBotReply(userMsg, state) {
   }
 
   // Bot silencioso durante atendimento humano
-  if (state.step === 'atendente_humano' || state.step === 'humano_ativo') return null;
+  if (state.step === 'atendente_humano') return null;
+  if (state.step === 'humano_ativo') {
+    if (Date.now() - (state.humanoAssumiuAt || 0) < 30 * 60 * 1000) return null;
+    // 30 min passaram — bot retoma
+    state.step = 'menu';
+    state.humanoAssumiuAt = null;
+  }
 
   // Fluxo de alteração de reserva
   if (state.step === 'alterar_busca') {
@@ -705,10 +711,21 @@ const STEPS_ATIVOS = ['reserva_dados', 'reserva_aguarda_nome', 'reserva_aguarda_
 setInterval(async () => {
   const agora = Date.now();
   for (const [phone, state] of Object.entries(userStates)) {
+    // Retornar bot após 30 min de atendimento humano
+    if (state.step === 'humano_ativo' && state.humanoAssumiuAt) {
+      if (agora - state.humanoAssumiuAt >= INATIVIDADE_MS) {
+        state.step = 'menu';
+        state.humanoAssumiuAt = null;
+        await enviarMensagem(phone, `Olá! 👋 O atendimento humano foi encerrado.\nEstou de volta para te ajudar! Como posso te ajudar?\n\n${SCRIPTS.boasVindas}`);
+        console.log(`[${new Date().toLocaleTimeString()}] 🤖 Bot retomou conversa com ${phone}`);
+      }
+    }
+    // Inatividade em fluxos de reserva/alteração
     if (!STEPS_ATIVOS.includes(state.step)) continue;
     if (agora - state.lastActivity >= INATIVIDADE_MS) {
       state.step = 'menu';
       state.reserva = {};
+      state.alteracao = {};
       await enviarMensagem(phone, SCRIPTS.inatividade);
     }
   }
@@ -728,6 +745,7 @@ app.post('/webhook', async (req, res) => {
     const phoneAlvo = body?.phone || body?.message?.phone;
     if (phoneAlvo && userStates[phoneAlvo]) {
       userStates[phoneAlvo].step = 'humano_ativo';
+      userStates[phoneAlvo].humanoAssumiuAt = Date.now();
       console.log(`[${new Date().toLocaleTimeString()}] 👤 Humano assumiu conversa com ${phoneAlvo}`);
     }
     return;
