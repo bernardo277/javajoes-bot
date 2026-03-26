@@ -422,8 +422,9 @@ async function getBotReply(userMsg, state) {
   // Confirmação da reserva
   if (state.step === 'reserva_confirm') {
     if (msg === '1' || has(msg, 'sim', 'confirmar', 'ok', 'pode', 'isso')) {
-      if (state.reserva._segunda) {
+      if (state.reserva.data && isSegunda(state.reserva.data)) {
         state.step = 'reserva_aguarda_data';
+        state.reserva = { ...state.reserva, data: null, _segunda: false };
         return SCRIPTS.diaFechado;
       }
 
@@ -485,7 +486,7 @@ async function getBotReply(userMsg, state) {
     }
     const data = extrairData(userMsg) || userMsg.trim();
     const pessoas = extrairPessoas(userMsg) || state.reserva.pessoas || null;
-    state.reserva = { ...state.reserva, data, pessoas };
+    state.reserva = { ...state.reserva, data, pessoas, _segunda: false };
     return avancarReserva(state);
   }
 
