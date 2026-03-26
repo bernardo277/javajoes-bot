@@ -18,6 +18,9 @@ const CLIENT_TOKEN = process.env.ZAPI_CLIENT_TOKEN;
 const PORT = process.env.PORT || 3000;
 const ZAPI_URL = `https://api.z-api.io/instances/${INSTANCE_ID}/token/${TOKEN}`;
 
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_KEY = process.env.SUPABASE_KEY;
+
 const app = express();
 app.use(express.json());
 
@@ -193,7 +196,7 @@ const userStates = {};
 
 function getState(phone) {
   if (!userStates[phone]) {
-    userStates[phone] = { step: 'idle', reserva: {}, lastActivity: Date.now() };
+    userStates[phone] = { step: 'idle', reserva: {}, lastActivity: Date.now(), phone };
   }
   return userStates[phone];
 }
@@ -287,7 +290,6 @@ function verificarFAQ(msg) {
   return null;
 }
 
-// Retorna lembrete da pergunta pendente na reserva
 function getPendingQuestion(state) {
   if (state.step === 'reserva_aguarda_nome') return 'Qual é o seu nome completo? 😊';
   if (state.step === 'reserva_aguarda_data') return 'Qual a data desejada para a reserva?';
@@ -318,30 +320,121 @@ function rotearMenuNumero(msg, state) {
   return null;
 }
 
-function getBotReply(userMsg, state) {
+// ─── SUPABASE ────────────────────────────────────────────────────────────────
+
+function converterDataParaISO(dataStr) {
+  if (!dataStr) return null;
+  const meses = {
+    'janeiro':'01','fevereiro':'02','marco':'03','março':'03',
+    'abril':'04','maio':'05','junho':'06','julho':'07',
+    'agosto':'08','setembro':'09','outubro':'10','novembro':'11','dezembro':'12'
+  };
+  const ano = new Date().getFullYear();
+  const normalizado = dataStr.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+  // "31 de março" ou "31 de marco"
+  const m1 = normalizado.match(/(\d{1,2})\s+de\s+([a-z]+)/);
+  if (m1) {
+    const mes = meses[m1[2]];
+    if (mes) return `${ano}-${mes}-${m1[1].padStart(2, '0')}`;
+  }
+  // "31/03"
+  const m2 = normalizado.match(/(\d{1,2})\/(\d{1,2})/);
+  if (m2) return `${ano}-${m2[2].padStart(2, '0')}-${m2[1].padStart(2, '0')}`;
+  // "dia 31" — assume mês atual
+  const m3 = normalizado.match(/dia\s+(\d{1,2})/);
+  if (m3) {
+    const mes = String(new Date().getMonth() + 1).padStart(2, '0');
+    return `${ano}-${mes}-${m3[1].padStart(2, '0')}`;
+  }
+  return null;
+}
+
+async function verificarDisponibilidade(dataISO, pessoasNova) {
+  try {
+    const resp = await axios.get(
+      `${SUPABASE_URL}/rest/v1/reservas?data=eq.${dataISO}&select=pessoas`,
+      { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } }
+    );
+    const totalAtual = resp.data.reduce((sum, r) => sum + (r.pessoas || 0), 0);
+    const vagasRestantes = 100 - totalAtual;
+    return { disponivel: (totalAtual + pessoasNova) <= 100, vagasRestantes };
+  } catch (err) {
+    console.error('Erro ao verificar disponibilidade:', err.message);
+    return { disponivel: true, vagasRestantes: 100 };
+  }
+}
+
+async function salvarReservaSupabase(nome, whatsapp, dataISO, pessoas) {
+  try {
+    await axios.post(
+      `${SUPABASE_URL}/rest/v1/reservas`,
+      { nome, whatsapp, data: dataISO, pessoas: parseInt(pessoas), obs: '' },
+      {
+        headers: {
+          'apikey': SUPABASE_KEY,
+          'Authorization': `Bearer ${SUPABASE_KEY}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=minimal'
+        }
+      }
+    );
+    console.log(`[${new Date().toLocaleTimeString()}] 📋 Reserva salva no Supabase: ${nome} | ${dataISO} | ${pessoas} pessoas`);
+    return true;
+  } catch (err) {
+    console.error('Erro ao salvar reserva no Supabase:', err.response?.data || err.message);
+    return false;
+  }
+}
+
+// ─── BOT ─────────────────────────────────────────────────────────────────────
+
+async function getBotReply(userMsg, state) {
   const msg = normalize(userMsg);
 
-  // ── Opção 0: voltar ao menu em qualquer momento ──────────────────────────────
+  // Opção 0: voltar ao menu em qualquer momento
   if (msg === '0') {
     state.step = 'menu';
     state.reserva = {};
     return SCRIPTS.boasVindas;
   }
 
-  // ── Escape de fluxo de reserva via número de menu ────────────────────────────
+  // Escape de fluxo de reserva via número de menu
   const emFluxoReserva = ['reserva_dados', 'reserva_aguarda_nome', 'reserva_aguarda_data', 'reserva_aguarda_pessoas'].includes(state.step);
   if (emFluxoReserva) {
     const menuResp = rotearMenuNumero(msg, state);
     if (menuResp) { state.reserva = {}; return menuResp; }
   }
 
-  // ── Confirmação da reserva ───────────────────────────────────────────────────
+  // Confirmação da reserva
   if (state.step === 'reserva_confirm') {
     if (msg === '1' || has(msg, 'sim', 'confirmar', 'ok', 'pode', 'isso')) {
       if (state.reserva._segunda) {
         state.step = 'reserva_aguarda_data';
         return SCRIPTS.diaFechado;
       }
+
+      const dataISO = converterDataParaISO(state.reserva.data);
+      const qtd = parseInt(state.reserva.pessoas);
+      const dataNome = state.reserva.data;
+
+      if (dataISO && !isNaN(qtd)) {
+        const { disponivel, vagasRestantes } = await verificarDisponibilidade(dataISO, qtd);
+        if (!disponivel) {
+          state.step = 'reserva_aguarda_data';
+          state.reserva = { ...state.reserva, data: null };
+          if (vagasRestantes > 0) {
+            return `Que pena! A data ${dataNome} só tem ${vagasRestantes} vagas disponíveis e você pediu ${qtd} pessoas. 😕\nEscolha outra data ou reduza o número de pessoas!\n_(Digite 0 para voltar ao menu principal)_`;
+          }
+          return `Que pena! A data ${dataNome} já está com lotação esgotada (máximo 100 pessoas por dia). 😕\nQuer escolher outra data?\n_(Digite 0 para voltar ao menu principal)_`;
+        }
+      }
+
+      // Salva no Supabase
+      if (dataISO) {
+        await salvarReservaSupabase(state.reserva.nome, state.phone, dataISO, qtd);
+      }
+
       state.step = 'menu';
       state.reserva = {};
       return SCRIPTS.op3_confirmado;
@@ -351,21 +444,17 @@ function getBotReply(userMsg, state) {
       state.reserva = {};
       return 'Claro! Me informe novamente os dados corretos:\n• Seu nome completo\n• Data desejada\n• Quantidade de pessoas\n_(Digite 0 para voltar ao menu principal)_';
     }
-    // Mudança de assunto durante confirmação: responde e lembra do contexto
+    // Mudança de assunto durante confirmação
     const faqConfirm = verificarFAQ(msg);
     if (faqConfirm) {
       return faqConfirm + `\n\n---\n💬 Ainda na sua reserva: responda 1 para confirmar ou 2 para alterar.`;
     }
   }
 
-  // ── Aguardando nome ──────────────────────────────────────────────────────────
+  // Aguardando nome
   if (state.step === 'reserva_aguarda_nome') {
     const faq = verificarFAQ(msg);
-    if (faq) {
-      const pending = getPendingQuestion(state);
-      return faq + `\n\n---\n💬 Continuando sua reserva: ${pending}`;
-    }
-    // Tenta extrair todos os campos de uma vez
+    if (faq) return faq + `\n\n---\n💬 Continuando sua reserva: ${getPendingQuestion(state)}`;
     const nome = extrairNome(userMsg) || userMsg.trim();
     const data = extrairData(userMsg) || state.reserva.data || null;
     const pessoas = extrairPessoas(userMsg) || state.reserva.pessoas || null;
@@ -373,13 +462,10 @@ function getBotReply(userMsg, state) {
     return avancarReserva(state);
   }
 
-  // ── Aguardando data ──────────────────────────────────────────────────────────
+  // Aguardando data
   if (state.step === 'reserva_aguarda_data') {
     const faq = verificarFAQ(msg);
-    if (faq) {
-      const pending = getPendingQuestion(state);
-      return faq + `\n\n---\n💬 Continuando sua reserva: ${pending}`;
-    }
+    if (faq) return faq + `\n\n---\n💬 Continuando sua reserva: ${getPendingQuestion(state)}`;
     if (isSegunda(userMsg)) {
       state.step = 'reserva_aguarda_data';
       return SCRIPTS.diaFechado;
@@ -390,26 +476,19 @@ function getBotReply(userMsg, state) {
     return avancarReserva(state);
   }
 
-  // ── Aguardando quantidade de pessoas ─────────────────────────────────────────
+  // Aguardando quantidade de pessoas
   if (state.step === 'reserva_aguarda_pessoas') {
     const faq = verificarFAQ(msg);
-    if (faq) {
-      const pending = getPendingQuestion(state);
-      return faq + `\n\n---\n💬 Continuando sua reserva: ${pending}`;
-    }
+    if (faq) return faq + `\n\n---\n💬 Continuando sua reserva: ${getPendingQuestion(state)}`;
     const p = extrairPessoas(userMsg) || userMsg.trim();
     state.reserva = { ...state.reserva, pessoas: p };
     return avancarReserva(state);
   }
 
-  // ── Recebendo dados da reserva (entrada inicial) ──────────────────────────────
+  // Recebendo dados da reserva (entrada inicial)
   if (state.step === 'reserva_dados') {
-    // Verifica FAQ antes de tentar extrair dados
     const faqReserva = verificarFAQ(msg);
-    if (faqReserva) {
-      const pending = getPendingQuestion(state);
-      return faqReserva + `\n\n---\n💬 Continuando sua reserva: ${pending}`;
-    }
+    if (faqReserva) return faqReserva + `\n\n---\n💬 Continuando sua reserva: ${getPendingQuestion(state)}`;
     const nome = extrairNome(userMsg) || state.reserva.nome || null;
     const data = extrairData(userMsg) || state.reserva.data || null;
     const pessoas = extrairPessoas(userMsg) || state.reserva.pessoas || null;
@@ -423,13 +502,12 @@ function getBotReply(userMsg, state) {
     return avancarReserva(state);
   }
 
-  // ── Cancelamento ─────────────────────────────────────────────────────────────
+  // Cancelamento
   if (state.step === 'cancelar_dados') {
     state.step = 'menu';
     return SCRIPTS.cancelar_confirmado;
   }
 
-  // ── FAQ geral ────────────────────────────────────────────────────────────────
   const faqResp = verificarFAQ(msg);
   if (faqResp) return faqResp;
 
@@ -524,8 +602,9 @@ app.post('/webhook', async (req, res) => {
 
   const state = getState(phone);
   state.lastActivity = Date.now();
+  state.phone = phone;
 
-  const reply = getBotReply(text, state);
+  const reply = await getBotReply(text, state);
 
   await enviarMensagem(phone, reply);
 });
