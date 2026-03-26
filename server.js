@@ -36,7 +36,8 @@ Meu nome é Giovana, fico feliz em te atender! Como posso te ajudar hoje?
 
   op1: `O Java Joe's é uma pizzaria com ambiente familiar e aconchegante, ideal para curtir com amigos e família. Nosso salão tem capacidade para cerca de 120 pessoas, com área kids de 18m² de muita diversão, oferecemos uma experiência completa com pizzas, massas, bebidas e sobremesas. 🍕
 
-Posso te ajudar com mais alguma coisa?`,
+Posso te ajudar com mais alguma coisa?
+0 - Voltar ao menu principal`,
 
   op2: `💰 Rodízio (pizzas + massas + refil de bebidas):
 
@@ -48,7 +49,8 @@ Crianças de 04 a 09 anos: R$ 43,99
 Terça a Domingo: 18h às 23h
 🚫 Segunda-feira: fechado
 
-Posso te ajudar com mais alguma coisa?`,
+Posso te ajudar com mais alguma coisa?
+0 - Voltar ao menu principal`,
 
   op3_info: `Garanta sua mesa no Java Joe's e venha viver uma experiência incrível com a gente! 🍕
 
@@ -74,7 +76,8 @@ Para reservar agora, é só me enviar:
 • Data
 • Quantidade de pessoas
 
-💡 Dica: finais de semana costumam lotar… garanta sua vaga com antecedência!`,
+💡 Dica: finais de semana costumam lotar… garanta sua vaga com antecedência!
+_(Digite 0 para voltar ao menu principal)_`,
 
   op3_confirmar: (nome, data, pessoas) => `Perfeito! Aqui está o resumo da sua reserva:
 👤 Nome: ${nome}
@@ -82,29 +85,39 @@ Para reservar agora, é só me enviar:
 👥 Pessoas: ${pessoas}
 Deseja confirmar?
 1 - Sim, confirmar
-2 - Alterar informações`,
+2 - Alterar informações
+0 - Voltar ao menu principal`,
 
   diaFechado: `Ops! Infelizmente não funcionamos às segundas-feiras. 😕
 Mas temos mesa disponível de terça a domingo, das 18h às 23h!
-Quer escolher outro dia para sua reserva? 😊`,
+Quer escolher outro dia para sua reserva? 😊
+_(Digite 0 para voltar ao menu principal)_`,
 
   minimoNaoAtingido: `Nossas reservas são para grupos a partir de 4 pessoas. 😊
 Para grupos menores, fique à vontade para vir sem reserva — sempre tentamos acomodar nossos clientes!
 ⚠️ Lembrando que a disponibilidade depende do movimento do dia.
-Posso te ajudar com mais alguma coisa?`,
+
+Posso te ajudar com mais alguma coisa?
+0 - Voltar ao menu principal`,
 
   maximoUltrapassado: `Para grupos acima de 50 pessoas, o atendimento é feito diretamente com nossa equipe. 😊
-Um de nossos atendentes entrará em contato para organizar tudo com você!`,
+Um de nossos atendentes entrará em contato para organizar tudo com você!
+
+0 - Voltar ao menu principal`,
 
   op3_confirmado: `✅ Reserva confirmada! Te esperamos no Java Joe's. 🍕
 ⚠️ Lembrete: chegue até as 19h30 para confirmar sua mesa presencialmente. Reservas não confirmadas até esse horário podem ser liberadas para outros clientes.
-Qualquer dúvida, é só chamar!`,
+Qualquer dúvida, é só chamar!
+
+0 - Voltar ao menu principal`,
 
   op4: `Estamos localizados em:
-📍 Rua Jagroaba, 262 — Vila Valqueire, Rio de Janeiro
+📍 Rua Jagoroaba, 262 — Vila Valqueire, Rio de Janeiro
 🚗 Estacionamento: há vagas disponíveis nas ruas ao redor do restaurante.
 🗺️ Google Maps: https://maps.app.goo.gl/vUYaStfhhLQZNYBY7
-Te esperamos! Qualquer dúvida, é só chamar. 😊`,
+Te esperamos! Qualquer dúvida, é só chamar. 😊
+
+0 - Voltar ao menu principal`,
 
   op5: `Aqui no Java Joe's você escolhe como quer aproveitar:
 
@@ -115,16 +128,21 @@ Mais de 30 sabores de pizzas (salgadas e doces) + massas variadas + acompanhamen
 Pizzas nos tamanhos 27cm, 35cm e 40cm, além de massas, entradas e sobremesas incríveis do nosso cardápio.
 
 Quer conferir o cardápio completo? Um de nossos atendentes enviará para você pelo WhatsApp! 😊
-Posso te ajudar com mais alguma coisa?`,
+
+Posso te ajudar com mais alguma coisa?
+0 - Voltar ao menu principal`,
 
   cancelar_solicitar: `Tudo bem, sem problemas! 😊
 Para cancelar sua reserva, me informe:
 • Seu nome completo
-• Data da reserva`,
+• Data da reserva
+_(Digite 0 para voltar ao menu principal)_`,
 
   cancelar_confirmado: `Reserva cancelada com sucesso! ✅
 Sentiremos sua falta, mas esperamos te receber em breve no Java Joe's. 🍕
-Qualquer coisa, é só chamar. Até a próxima!`,
+Qualquer coisa, é só chamar. Até a próxima!
+
+0 - Voltar ao menu principal`,
 
   atendente: `Claro! Vou te conectar com um de nossos atendentes agora. 👋
 Um momento, por favor. Nossa equipe retornará em breve.`,
@@ -135,7 +153,8 @@ Um momento, por favor. Nossa equipe retornará em breve.`,
 2 - Valores e funcionamento
 3 - Reservas
 4 - Localização e endereço
-5 - Informações sobre o rodízio e à la carte`,
+5 - Informações sobre o rodízio e à la carte
+0 - Voltar ao menu principal`,
 
   fallback: `Hmm, não sei se consigo te ajudar com isso. 😊
 Mas posso te ajudar com:
@@ -144,35 +163,37 @@ Mas posso te ajudar com:
 2 - Valores e funcionamento
 3 - Reservas
 4 - Localização e endereço
-5 - Informações sobre o rodízio e à la carte`,
+5 - Informações sobre o rodízio e à la carte
+0 - Voltar ao menu principal`,
+
+  inatividade: `Parece que você se afastou! 😊 Encerrando sua sessão por inatividade. Quando quiser continuar é só mandar uma mensagem!`,
 
   faq: {
-    pagamento: `Aceitamos todas as formas de pagamento: cartão de crédito, débito, PIX e vale-refeição/alimentação. 😊\nPosso te ajudar com mais alguma coisa?`,
-    vegetariano: `Sim! Temos opções vegetarianas no cardápio. 🥗\nNossos garçons terão prazer em te orientar na sua visita.\nPosso te ajudar com mais alguma coisa?`,
-    glutenLactose: `Infelizmente não temos opções sem glúten ou sem lactose no momento.\nPosso te ajudar com mais alguma coisa?`,
-    meiaPorte: `Sim, trabalhamos com meia-porção! 😊\nPara mais detalhes, nossos garçons poderão te orientar na sua visita.\nPosso te ajudar com mais alguma coisa?`,
-    sinal: `Não cobramos nenhum sinal para reservas! 😊\nPedimos apenas que chegue até as 19h30 para confirmar sua mesa presencialmente.\nPosso te ajudar com mais alguma coisa?`,
-    semReserva: `Sim! Sempre tentamos acomodar nossos clientes, mesmo sem reserva. 😊\n⚠️ Lembrando que a disponibilidade depende do movimento do dia. Para garantir o seu lugar, recomendamos fazer uma reserva!\nPosso te ajudar com mais alguma coisa?`,
-    espera: `O tempo de espera varia de acordo com o movimento do dia. 😊\nPara garantir sua mesa e evitar espera, recomendamos fazer uma reserva!\nPosso te ajudar com mais alguma coisa?`,
-    bolo: `Sim, pode trazer seu bolo! 🎂😊\nPosso te ajudar com mais alguma coisa?`,
-    decoracao: `No momento não oferecemos serviço de decoração, mas você pode trazer sua própria decoração! 🎉\nPosso te ajudar com mais alguma coisa?`,
-    wifi: `Infelizmente não temos WiFi disponível. 😊\nPosso te ajudar com mais alguma coisa?`,
-    fumantes: `Sim, temos espaço para fumantes! 🚬\nPosso te ajudar com mais alguma coisa?`,
-    cadeirante: `Infelizmente nosso espaço ainda não é totalmente acessível para cadeirantes. Pedimos desculpas pela limitação. 🙏\nPosso te ajudar com mais alguma coisa?`,
-    musica: `No momento não temos música ao vivo ou DJ. 😊\nPosso te ajudar com mais alguma coisa?`,
-    delivery: `Fazemos entregas somente pelo iFood! 🛵\nNos encontre lá e aproveite nossas opções no conforto da sua casa. 😊\nPosso te ajudar com mais alguma coisa?`,
-    kids: `Sim, temos área kids! 🎉\nNosso espaço é ótimo para toda a família. As crianças ficam à vontade enquanto vocês aproveitam a refeição.\n\nE vem novidade por aí! 🎉 Em breve abre o Java Kids — um espaço feito especialmente para as crianças se divertirem. Quer ficar por dentro? Segue a gente no Instagram: 👉 instagram.com/javajoespizzariakids\n\nPosso te ajudar com mais alguma coisa?`,
-    pets: `Infelizmente não aceitamos animais de estimação no restaurante, por questões de higiene e segurança alimentar. 🐾\nAgradecemos a compreensão!\n\nPosso te ajudar com mais alguma coisa?`,
+    pagamento: `Aceitamos todas as formas de pagamento: cartão de crédito, débito, PIX e vale-refeição/alimentação. 😊\nPosso te ajudar com mais alguma coisa?\n0 - Voltar ao menu principal`,
+    vegetariano: `Sim! Temos opções vegetarianas no cardápio. 🥗\nNossos garçons terão prazer em te orientar na sua visita.\nPosso te ajudar com mais alguma coisa?\n0 - Voltar ao menu principal`,
+    glutenLactose: `Infelizmente não temos opções sem glúten ou sem lactose no momento.\nPosso te ajudar com mais alguma coisa?\n0 - Voltar ao menu principal`,
+    meiaPorte: `Sim, trabalhamos com meia-porção! 😊\nPara mais detalhes, nossos garçons poderão te orientar na sua visita.\nPosso te ajudar com mais alguma coisa?\n0 - Voltar ao menu principal`,
+    sinal: `Não cobramos nenhum sinal para reservas! 😊\nPedimos apenas que chegue até as 19h30 para confirmar sua mesa presencialmente.\nPosso te ajudar com mais alguma coisa?\n0 - Voltar ao menu principal`,
+    semReserva: `Sim! Sempre tentamos acomodar nossos clientes, mesmo sem reserva. 😊\n⚠️ Lembrando que a disponibilidade depende do movimento do dia. Para garantir o seu lugar, recomendamos fazer uma reserva!\nPosso te ajudar com mais alguma coisa?\n0 - Voltar ao menu principal`,
+    espera: `O tempo de espera varia de acordo com o movimento do dia. 😊\nPara garantir sua mesa e evitar espera, recomendamos fazer uma reserva!\nPosso te ajudar com mais alguma coisa?\n0 - Voltar ao menu principal`,
+    bolo: `Sim, pode trazer seu bolo! 🎂😊\nPosso te ajudar com mais alguma coisa?\n0 - Voltar ao menu principal`,
+    decoracao: `No momento não oferecemos serviço de decoração, mas você pode trazer sua própria decoração! 🎉\nPosso te ajudar com mais alguma coisa?\n0 - Voltar ao menu principal`,
+    wifi: `Infelizmente não temos WiFi disponível. 😊\nPosso te ajudar com mais alguma coisa?\n0 - Voltar ao menu principal`,
+    fumantes: `Sim, temos espaço para fumantes! 🚬\nPosso te ajudar com mais alguma coisa?\n0 - Voltar ao menu principal`,
+    cadeirante: `Infelizmente nosso espaço ainda não é totalmente acessível para cadeirantes. Pedimos desculpas pela limitação. 🙏\nPosso te ajudar com mais alguma coisa?\n0 - Voltar ao menu principal`,
+    musica: `No momento não temos música ao vivo ou DJ. 😊\nPosso te ajudar com mais alguma coisa?\n0 - Voltar ao menu principal`,
+    delivery: `Fazemos entregas somente pelo iFood! 🛵\nNos encontre lá e aproveite nossas opções no conforto da sua casa. 😊\nPosso te ajudar com mais alguma coisa?\n0 - Voltar ao menu principal`,
+    kids: `Sim, temos área kids! 🎉\nNosso espaço é ótimo para toda a família. As crianças ficam à vontade enquanto vocês aproveitam a refeição.\n\nE vem novidade por aí! 🎉 Em breve abre o Java Kids — um espaço feito especialmente para as crianças se divertirem. Quer ficar por dentro? Segue a gente no Instagram: 👉 instagram.com/javajoespizzariakids\n\nPosso te ajudar com mais alguma coisa?\n0 - Voltar ao menu principal`,
+    pets: `Infelizmente não aceitamos animais de estimação no restaurante, por questões de higiene e segurança alimentar. 🐾\nIsso inclui cachorros, gatos, pássaros, papagaios e demais animais.\nAgradecemos a compreensão!\n\nPosso te ajudar com mais alguma coisa?\n0 - Voltar ao menu principal`,
   }
 };
 
 // ─── ESTADO POR USUÁRIO ───────────────────────────────────────────────────────
-// Cada número de telefone tem seu próprio estado de conversa
 const userStates = {};
 
 function getState(phone) {
   if (!userStates[phone]) {
-    userStates[phone] = { step: 'idle', reserva: {} };
+    userStates[phone] = { step: 'idle', reserva: {}, lastActivity: Date.now() };
   }
   return userStates[phone];
 }
@@ -262,15 +283,24 @@ function verificarFAQ(msg) {
   if (has(msg, 'musica ao vivo', 'banda', 'dj', 'show')) return SCRIPTS.faq.musica;
   if (has(msg, 'delivery', 'entrega', 'ifood', 'entregar')) return SCRIPTS.faq.delivery;
   if (has(msg, 'kids', 'crianca', 'criancas', 'area infantil', 'filho')) return SCRIPTS.faq.kids;
-  if (has(msg, 'cachorro', 'gato', 'pet', 'animal', 'bicho', 'cao', 'dog')) return SCRIPTS.faq.pets;
+  if (has(msg, 'cachorro', 'gato', 'pet', 'animal', 'bicho', 'cao', 'dog', 'papagaio', 'passaro', 'ave', 'felino', 'canino', 'hamster', 'coelho', 'reptil', 'cobra', 'lagarto', 'tartaruga', 'roedor', 'porquinho')) return SCRIPTS.faq.pets;
+  return null;
+}
+
+// Retorna lembrete da pergunta pendente na reserva
+function getPendingQuestion(state) {
+  if (state.step === 'reserva_aguarda_nome') return 'Qual é o seu nome completo? 😊';
+  if (state.step === 'reserva_aguarda_data') return 'Qual a data desejada para a reserva?';
+  if (state.step === 'reserva_aguarda_pessoas') return 'Para quantas pessoas será a reserva?';
+  if (state.step === 'reserva_dados') return 'Pode me enviar: nome, data e quantidade de pessoas para a reserva.';
   return null;
 }
 
 function avancarReserva(state) {
   const { nome, data, pessoas } = state.reserva;
-  if (!nome) { state.step = 'reserva_aguarda_nome'; return 'Qual é o seu nome completo? 😊'; }
-  if (!data) { state.step = 'reserva_aguarda_data'; return 'Qual a data desejada para a reserva?'; }
-  if (!pessoas) { state.step = 'reserva_aguarda_pessoas'; return 'Para quantas pessoas será a reserva?'; }
+  if (!nome) { state.step = 'reserva_aguarda_nome'; return 'Qual é o seu nome completo? 😊\n_(Digite 0 para voltar ao menu principal)_'; }
+  if (!data) { state.step = 'reserva_aguarda_data'; return 'Qual a data desejada para a reserva?\n_(Digite 0 para voltar ao menu principal)_'; }
+  if (!pessoas) { state.step = 'reserva_aguarda_pessoas'; return 'Para quantas pessoas será a reserva?\n_(Digite 0 para voltar ao menu principal)_'; }
   const qtd = parseInt(pessoas);
   if (!isNaN(qtd) && qtd < 4) { state.step = 'menu'; return SCRIPTS.minimoNaoAtingido; }
   if (!isNaN(qtd) && qtd > 50) { state.step = 'menu'; return SCRIPTS.maximoUltrapassado; }
@@ -279,9 +309,10 @@ function avancarReserva(state) {
 }
 
 function rotearMenuNumero(msg, state) {
+  if (msg === '0') { state.step = 'menu'; state.reserva = {}; return SCRIPTS.boasVindas; }
   if (msg === '1') { state.step = 'menu'; return SCRIPTS.op1; }
   if (msg === '2') { state.step = 'menu'; return SCRIPTS.op2; }
-  if (msg === '3') { state.step = 'reserva_dados'; return SCRIPTS.op3_info; }
+  if (msg === '3') { state.step = 'reserva_dados'; state.reserva = {}; return SCRIPTS.op3_info; }
   if (msg === '4') { state.step = 'menu'; return SCRIPTS.op4; }
   if (msg === '5') { state.step = 'menu'; return SCRIPTS.op5; }
   return null;
@@ -290,13 +321,21 @@ function rotearMenuNumero(msg, state) {
 function getBotReply(userMsg, state) {
   const msg = normalize(userMsg);
 
-  // Escape de fluxo de reserva via número de menu
+  // ── Opção 0: voltar ao menu em qualquer momento ──────────────────────────────
+  if (msg === '0') {
+    state.step = 'menu';
+    state.reserva = {};
+    return SCRIPTS.boasVindas;
+  }
+
+  // ── Escape de fluxo de reserva via número de menu ────────────────────────────
   const emFluxoReserva = ['reserva_dados', 'reserva_aguarda_nome', 'reserva_aguarda_data', 'reserva_aguarda_pessoas'].includes(state.step);
   if (emFluxoReserva) {
     const menuResp = rotearMenuNumero(msg, state);
     if (menuResp) { state.reserva = {}; return menuResp; }
   }
 
+  // ── Confirmação da reserva ───────────────────────────────────────────────────
   if (state.step === 'reserva_confirm') {
     if (msg === '1' || has(msg, 'sim', 'confirmar', 'ok', 'pode', 'isso')) {
       if (state.reserva._segunda) {
@@ -304,41 +343,73 @@ function getBotReply(userMsg, state) {
         return SCRIPTS.diaFechado;
       }
       state.step = 'menu';
+      state.reserva = {};
       return SCRIPTS.op3_confirmado;
     }
     if (msg === '2' || has(msg, 'alterar', 'mudar', 'corrigir', 'nao')) {
       state.step = 'reserva_dados';
-      return 'Claro! Me informe novamente os dados corretos:\n• Seu nome completo\n• Data desejada\n• Quantidade de pessoas';
+      state.reserva = {};
+      return 'Claro! Me informe novamente os dados corretos:\n• Seu nome completo\n• Data desejada\n• Quantidade de pessoas\n_(Digite 0 para voltar ao menu principal)_';
+    }
+    // Mudança de assunto durante confirmação: responde e lembra do contexto
+    const faqConfirm = verificarFAQ(msg);
+    if (faqConfirm) {
+      return faqConfirm + `\n\n---\n💬 Ainda na sua reserva: responda 1 para confirmar ou 2 para alterar.`;
     }
   }
 
+  // ── Aguardando nome ──────────────────────────────────────────────────────────
   if (state.step === 'reserva_aguarda_nome') {
     const faq = verificarFAQ(msg);
-    if (faq) return faq;
-    state.reserva.nome = userMsg.trim() || state.reserva.nome;
+    if (faq) {
+      const pending = getPendingQuestion(state);
+      return faq + `\n\n---\n💬 Continuando sua reserva: ${pending}`;
+    }
+    // Tenta extrair todos os campos de uma vez
+    const nome = extrairNome(userMsg) || userMsg.trim();
+    const data = extrairData(userMsg) || state.reserva.data || null;
+    const pessoas = extrairPessoas(userMsg) || state.reserva.pessoas || null;
+    state.reserva = { ...state.reserva, nome, data, pessoas };
     return avancarReserva(state);
   }
 
+  // ── Aguardando data ──────────────────────────────────────────────────────────
   if (state.step === 'reserva_aguarda_data') {
     const faq = verificarFAQ(msg);
-    if (faq) return faq;
+    if (faq) {
+      const pending = getPendingQuestion(state);
+      return faq + `\n\n---\n💬 Continuando sua reserva: ${pending}`;
+    }
     if (isSegunda(userMsg)) {
       state.step = 'reserva_aguarda_data';
       return SCRIPTS.diaFechado;
     }
-    state.reserva.data = extrairData(userMsg) || userMsg.trim();
+    const data = extrairData(userMsg) || userMsg.trim();
+    const pessoas = extrairPessoas(userMsg) || state.reserva.pessoas || null;
+    state.reserva = { ...state.reserva, data, pessoas };
     return avancarReserva(state);
   }
 
+  // ── Aguardando quantidade de pessoas ─────────────────────────────────────────
   if (state.step === 'reserva_aguarda_pessoas') {
     const faq = verificarFAQ(msg);
-    if (faq) return faq;
+    if (faq) {
+      const pending = getPendingQuestion(state);
+      return faq + `\n\n---\n💬 Continuando sua reserva: ${pending}`;
+    }
     const p = extrairPessoas(userMsg) || userMsg.trim();
-    state.reserva.pessoas = p;
+    state.reserva = { ...state.reserva, pessoas: p };
     return avancarReserva(state);
   }
 
+  // ── Recebendo dados da reserva (entrada inicial) ──────────────────────────────
   if (state.step === 'reserva_dados') {
+    // Verifica FAQ antes de tentar extrair dados
+    const faqReserva = verificarFAQ(msg);
+    if (faqReserva) {
+      const pending = getPendingQuestion(state);
+      return faqReserva + `\n\n---\n💬 Continuando sua reserva: ${pending}`;
+    }
     const nome = extrairNome(userMsg) || state.reserva.nome || null;
     const data = extrairData(userMsg) || state.reserva.data || null;
     const pessoas = extrairPessoas(userMsg) || state.reserva.pessoas || null;
@@ -352,11 +423,13 @@ function getBotReply(userMsg, state) {
     return avancarReserva(state);
   }
 
+  // ── Cancelamento ─────────────────────────────────────────────────────────────
   if (state.step === 'cancelar_dados') {
     state.step = 'menu';
     return SCRIPTS.cancelar_confirmado;
   }
 
+  // ── FAQ geral ────────────────────────────────────────────────────────────────
   const faqResp = verificarFAQ(msg);
   if (faqResp) return faqResp;
 
@@ -367,7 +440,7 @@ function getBotReply(userMsg, state) {
 
   if (has(msg, 'nosso espaco', 'espaco', 'ambiente', 'salao', 'capacidade', 'estrutura')) { state.step = 'menu'; return SCRIPTS.op1; }
   if (has(msg, 'valores', 'horario', 'funcionamento', 'que horas', 'abre', 'fecha')) { state.step = 'menu'; return SCRIPTS.op2; }
-  if (has(msg, 'reserva', 'reservar', 'fazer reserva', 'quero reserva')) { state.step = 'reserva_dados'; return SCRIPTS.op3_info; }
+  if (has(msg, 'reserva', 'reservar', 'fazer reserva', 'quero reserva')) { state.step = 'reserva_dados'; state.reserva = {}; return SCRIPTS.op3_info; }
   if (has(msg, 'localizacao', 'endereco', 'onde fica', 'como chegar', 'maps', 'mapa')) { state.step = 'menu'; return SCRIPTS.op4; }
   if (has(msg, 'rodizio', 'a la carte', 'cardapio', 'sabores', 'pizza', 'massa', 'tamanho')) { state.step = 'menu'; return SCRIPTS.op5; }
 
@@ -416,17 +489,32 @@ async function enviarMensagem(phone, message) {
   }
 }
 
+// ─── TIMER DE INATIVIDADE (30 minutos) ────────────────────────────────────────
+
+const INATIVIDADE_MS = 30 * 60 * 1000;
+const STEPS_ATIVOS = ['reserva_dados', 'reserva_aguarda_nome', 'reserva_aguarda_data', 'reserva_aguarda_pessoas', 'reserva_confirm', 'cancelar_dados'];
+
+setInterval(async () => {
+  const agora = Date.now();
+  for (const [phone, state] of Object.entries(userStates)) {
+    if (!STEPS_ATIVOS.includes(state.step)) continue;
+    if (agora - state.lastActivity >= INATIVIDADE_MS) {
+      state.step = 'menu';
+      state.reserva = {};
+      await enviarMensagem(phone, SCRIPTS.inatividade);
+    }
+  }
+}, 60 * 1000);
+
 // ─── WEBHOOK ──────────────────────────────────────────────────────────────────
 
 app.post('/webhook', async (req, res) => {
-  res.sendStatus(200); // responde imediatamente para o Z-API
+  res.sendStatus(200);
 
   const body = req.body;
 
-  // Ignora mensagens enviadas pelo próprio bot
   if (body?.isStatusReply || body?.fromMe || body?.message?.fromMe) return;
 
-  // Extrai telefone e texto
   const phone = body?.phone || body?.message?.phone;
   const text = body?.message?.text?.message || body?.text?.message || body?.text;
 
@@ -435,6 +523,8 @@ app.post('/webhook', async (req, res) => {
   console.log(`[${new Date().toLocaleTimeString()}] 📩 ${phone}: ${text}`);
 
   const state = getState(phone);
+  state.lastActivity = Date.now();
+
   const reply = getBotReply(text, state);
 
   await enviarMensagem(phone, reply);
