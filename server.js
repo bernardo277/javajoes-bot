@@ -267,7 +267,16 @@ function extrairData(text) {
 function extrairPessoas(text) {
   const m = text.match(/(\d+)\s*(?:pessoas?|person|pax|convidados?|adultos?)/i) ||
             text.match(/(?:somos|éramos|seremos|para)\s+(\d+)/i);
-  return m ? `${m[1]} pessoas` : null;
+  if (m) return `${m[1]} pessoas`;
+  // Aceita número sozinho em qualquer linha (ex: o cliente manda "15" numa linha)
+  for (const linha of text.trim().split('\n').reverse()) {
+    const num = linha.trim().match(/^(\d+)$/);
+    if (num) {
+      const n = parseInt(num[1]);
+      if (n >= 1 && n <= 100) return `${n} pessoas`;
+    }
+  }
+  return null;
 }
 
 function verificarFAQ(msg) {
