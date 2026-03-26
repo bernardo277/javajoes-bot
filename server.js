@@ -338,7 +338,7 @@ function rotearMenuNumero(msg, state) {
   if (msg === '4') { state.step = 'menu'; return SCRIPTS.op4; }
   if (msg === '5') { state.step = 'menu'; return SCRIPTS.op5; }
   if (msg === '6') { state.step = 'alterar_dados'; state.alteracao = {}; return `Para alterar sua reserva, me informe em uma mensagem:\n• Seu nome completo\n• Data da reserva\n• Nova quantidade de pessoas`; }
-  if (msg === '7') { state.step = 'atendente_humano'; return SCRIPTS.atendente; }
+  if (msg === '7') { state.step = 'atendente_humano'; state.humanoAssumiuAt = Date.now(); return SCRIPTS.atendente; }
   return null;
 }
 
@@ -473,8 +473,7 @@ async function getBotReply(userMsg, state) {
   }
 
   // Bot silencioso durante atendimento humano
-  if (state.step === 'atendente_humano') return null;
-  if (state.step === 'humano_ativo') {
+  if (state.step === 'atendente_humano' || state.step === 'humano_ativo') {
     if (Date.now() - (state.humanoAssumiuAt || 0) < 30 * 60 * 1000) return null;
     // 30 min passaram — bot retoma
     state.step = 'menu';
@@ -503,6 +502,7 @@ async function getBotReply(userMsg, state) {
 
     // Independente do resultado, direciona para atendente
     state.step = 'atendente_humano';
+    state.humanoAssumiuAt = Date.now();
     state.alteracao = {};
     return `Ok, em breve um dos nossos atendentes irá te atender para confirmar sua alteração.\nObrigada pelo contato! 😊`;
   }
@@ -638,6 +638,7 @@ async function getBotReply(userMsg, state) {
 
   if (has(msg, 'atendente', 'humano', 'pessoa real', 'falar com alguem', 'atendimento humano')) {
     state.step = 'atendente_humano';
+    state.humanoAssumiuAt = Date.now();
     return SCRIPTS.atendente;
   }
 
@@ -690,8 +691,8 @@ const STEPS_ATIVOS = ['reserva_dados', 'reserva_aguarda_nome', 'reserva_aguarda_
 setInterval(async () => {
   const agora = Date.now();
   for (const [phone, state] of Object.entries(userStates)) {
-    // Retornar bot após 30 min de atendimento humano
-    if (state.step === 'humano_ativo' && state.humanoAssumiuAt) {
+    // Retornar bot após 30 min de atendimento humano (qualquer estado de espera)
+    if ((state.step === 'humano_ativo' || state.step === 'atendente_humano') && state.humanoAssumiuAt) {
       if (agora - state.humanoAssumiuAt >= INATIVIDADE_MS) {
         state.step = 'menu';
         state.humanoAssumiuAt = null;
