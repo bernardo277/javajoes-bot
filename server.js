@@ -663,8 +663,10 @@ async function getBotReply(userMsg, state) {
     return SCRIPTS.boasVindas;
   }
 
-  state.step = 'menu';
-  return SCRIPTS.fallback;
+  // Bot não sabe responder — encaminha para humano imediatamente
+  state.step = 'atendente_humano';
+  state.humanoAssumiuAt = Date.now();
+  return SCRIPTS.atendente;
 }
 
 // ─── ENVIAR MENSAGEM VIA Z-API ─────────────────────────────────────────────────
@@ -683,30 +685,20 @@ async function enviarMensagem(phone, message) {
   }
 }
 
-// ─── TIMER DE INATIVIDADE (30 minutos) ────────────────────────────────────────
+// ─── TIMER — RETORNO DO BOT APÓS 30 MIN DE ATENDIMENTO HUMANO ─────────────────
 
 const INATIVIDADE_MS = 30 * 60 * 1000;
-const STEPS_ATIVOS = ['reserva_dados', 'reserva_aguarda_nome', 'reserva_aguarda_data', 'reserva_aguarda_pessoas', 'reserva_confirm', 'cancelar_dados', 'alterar_dados'];
 
 setInterval(async () => {
   const agora = Date.now();
   for (const [phone, state] of Object.entries(userStates)) {
-    // Retornar bot após 30 min de atendimento humano (qualquer estado de espera)
     if ((state.step === 'humano_ativo' || state.step === 'atendente_humano') && state.humanoAssumiuAt) {
       if (agora - state.humanoAssumiuAt >= INATIVIDADE_MS) {
         state.step = 'menu';
         state.humanoAssumiuAt = null;
-        await enviarMensagem(phone, `Olá! 👋 O atendimento humano foi encerrado.\nEstou de volta para te ajudar! Como posso te ajudar?\n\n${SCRIPTS.boasVindas}`);
+        await enviarMensagem(phone, `Olá! 👋 O atendimento humano foi encerrado.\nEstou de volta para te ajudar!\n\n${SCRIPTS.boasVindas}`);
         console.log(`[${new Date().toLocaleTimeString()}] 🤖 Bot retomou conversa com ${phone}`);
       }
-    }
-    // Inatividade em fluxos de reserva/alteração
-    if (!STEPS_ATIVOS.includes(state.step)) continue;
-    if (agora - state.lastActivity >= INATIVIDADE_MS) {
-      state.step = 'menu';
-      state.reserva = {};
-      state.alteracao = {};
-      await enviarMensagem(phone, SCRIPTS.inatividade);
     }
   }
 }, 60 * 1000);
