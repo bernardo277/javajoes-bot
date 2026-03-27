@@ -23,6 +23,15 @@ const SUPABASE_KEY = process.env.SUPABASE_KEY;
 
 const app = express();
 app.use(express.json());
+app.use((_req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Headers', 'Content-Type');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  if (_req.method === 'OPTIONS') return res.sendStatus(200);
+  next();
+});
+
+const ultimasRespostas = {};
 
 // ─── SCRIPTS DO BOT ───────────────────────────────────────────────────────────
 
@@ -684,6 +693,7 @@ async function enviarMensagem(phone, message) {
     }, {
       headers: { 'Client-Token': CLIENT_TOKEN }
     });
+    ultimasRespostas[phone] = message;
     console.log(`[${new Date().toLocaleTimeString()}] ✅ Enviado para ${phone}`);
   } catch (err) {
     console.error(`[${new Date().toLocaleTimeString()}] ❌ Erro ao enviar para ${phone}:`, err.response?.data || err.message);
@@ -760,9 +770,17 @@ app.post('/webhook', async (req, res) => {
   state._ultimaMsg = text;
 });
 
-// ─── ROTA DE TESTE ────────────────────────────────────────────────────────────
+app.get('/ultima-resposta/:phone', (req, res) => {
+  res.json({ msg: ultimasRespostas[req.params.phone] || null });
+});
 
-app.get('/', (req, res) => {
+app.post('/reset-test/:phone', (req, res) => {
+  delete userStates[req.params.phone];
+  delete ultimasRespostas[req.params.phone];
+  res.json({ ok: true });
+});
+
+app.get('/', (_req, res) => {
   res.send('🍕 Java Joe\'s Bot — Servidor rodando!');
 });
 
