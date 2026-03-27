@@ -257,11 +257,13 @@ function extrairNome(text) {
   const explicito = text.match(/(?:nome[:\s]+|meu nome [eé]\s+)([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s]{2,40}?)(?:\n|,|\.?$)/i);
   if (explicito) return explicito[1].trim();
   const verbos = /^(pode|quero|sim|não|nao|oi|olá|ola|tudo|ok|obrigado|isso|claro|então|entao|gostaria|preciso|manda|queria|quero|dia|para|seria|tenho|vou|sou)\b/i;
-  // Testa cada linha individualmente procurando nome próprio
-  for (const linha of text.trim().split('\n')) {
-    const l = linha.trim();
-    const nomeProprio = l.match(/^([A-ZÁÉÍÓÚÂÊÎÔÛÃÕ][a-záéíóúâêîôûãõç]+(?:\s[A-ZÁÉÍÓÚÂÊÎÔÛÃÕ][a-záéíóúâêîôûãõç]+){1,3})$/);
-    if (nomeProprio && !verbos.test(l)) return nomeProprio[1].trim();
+  const numeros = /\d/;
+  // Testa cada segmento (separado por vírgula ou quebra de linha)
+  const segmentos = text.trim().split(/[\n,]/).map(s => s.trim()).filter(Boolean);
+  for (const seg of segmentos) {
+    if (numeros.test(seg)) continue; // pula segmentos com números (telefone, data, qtd)
+    const nomeMatch = seg.match(/^([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s]{2,40})$/i);
+    if (nomeMatch && !verbos.test(seg)) return nomeMatch[1].trim();
   }
   return null;
 }
