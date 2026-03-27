@@ -464,8 +464,8 @@ async function verificarDisponibilidadeAlteracao(dataISO, pessoasAntigas, pessoa
 async function getBotReply(userMsg, state) {
   const msg = normalize(userMsg);
 
-  // Opção 0: voltar ao menu em qualquer momento
-  if (msg === '0') {
+  // Opção 0: volta ao menu — mas não interrompe atendimento humano
+  if (msg === '0' && state.step !== 'atendente_humano' && state.step !== 'humano_ativo') {
     state.step = 'menu';
     state.reserva = {};
     state.alteracao = {};
@@ -694,16 +694,26 @@ async function enviarMensagem(phone, message) {
 
 const INATIVIDADE_MS = 30 * 60 * 1000;
 
-setInterval(async () => {
+const VINTE_QUATRO_HORAS = 24 * 60 * 60 * 1000;
+const STEPS_RESERVA = ['reserva_dados', 'reserva_aguarda_nome', 'reserva_aguarda_data', 'reserva_aguarda_pessoas', 'reserva_confirm', 'cancelar_dados', 'alterar_dados'];
+
+setInterval(() => {
   const agora = Date.now();
   for (const [phone, state] of Object.entries(userStates)) {
+    // Fix 3: retorna silenciosamente após 30 min de atendimento humano
     if ((state.step === 'humano_ativo' || state.step === 'atendente_humano') && state.humanoAssumiuAt) {
       if (agora - state.humanoAssumiuAt >= INATIVIDADE_MS) {
         state.step = 'menu';
         state.humanoAssumiuAt = null;
-        await enviarMensagem(phone, `Olá! 👋 O atendimento humano foi encerrado.\nEstou de volta para te ajudar!\n\n${SCRIPTS.boasVindas}`);
-        console.log(`[${new Date().toLocaleTimeString()}] 🤖 Bot retomou conversa com ${phone}`);
+        console.log(`[${new Date().toLocaleTimeString()}] 🤖 Bot retomou silenciosamente com ${phone}`);
       }
+    }
+    // Fix 4: limpa estado de reserva parado há mais de 24h
+    if (STEPS_RESERVA.includes(state.step) && agora - state.lastActivity > VINTE_QUATRO_HORAS) {
+      state.step = 'menu';
+      state.reserva = {};
+      state.alteracao = {};
+      console.log(`[${new Date().toLocaleTimeString()}] 🧹 Estado antigo limpo para ${phone}`);
     }
   }
 }, 60 * 1000);
@@ -739,9 +749,15 @@ app.post('/webhook', async (req, res) => {
   state.lastActivity = Date.now();
   state.phone = phone;
 
-  const reply = await getBotReply(text, state);
-
-  if (reply) await enviarMensagem(phone, reply);
+  // Fix 2: debounce — aguarda 2s e responde só à última mensagem
+  if (state._debounce) clearTimeout(state._debounce);
+  state._debounce = setTimeout(async () => {
+    state._debounce = null;
+    const reply = await getBotReply(state._ultimaMsg || text, state);
+    state._ultimaMsg = null;
+    if (reply) await enviarMensagem(phone, reply);
+  }, 2000);
+  state._ultimaMsg = text;
 });
 
 // ─── ROTA DE TESTE ────────────────────────────────────────────────────────────
