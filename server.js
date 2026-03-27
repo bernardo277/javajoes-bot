@@ -668,10 +668,10 @@ async function getBotReply(userMsg, state) {
     return SCRIPTS.boasVindas;
   }
 
-  // Bot não sabe responder — encaminha para humano imediatamente
+  // Bot não sabe responder — silencioso, encaminha para humano
   state.step = 'atendente_humano';
   state.humanoAssumiuAt = Date.now();
-  return SCRIPTS.atendente;
+  return null;
 }
 
 // ─── ENVIAR MENSAGEM VIA Z-API ─────────────────────────────────────────────────
