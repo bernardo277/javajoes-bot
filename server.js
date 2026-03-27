@@ -658,6 +658,11 @@ async function getBotReply(userMsg, state) {
     return SCRIPTS.boasVindas;
   }
 
+  if (has(msg, 'obrigado', 'obrigada', 'valeu', 'muito obrigado', 'muito obrigada', 'ate logo', 'tchau', 'ate mais', 'flw', 'fui', 'ate breve', 'ate', 'foi otimo', 'foi otima', 'era isso', 'era tudo', 'consegui', 'resolvido', 'perfeito obrigado', 'perfeito obrigada', 'ok obrigado', 'ok obrigada')) {
+    state.step = 'menu';
+    return `De nada! 😊 Foi um prazer te atender!\nSe precisar de mais alguma coisa, é só chamar. Te esperamos no Java Joe's! 🍕`;
+  }
+
   if (state.step === 'idle') {
     state.step = 'menu';
     return SCRIPTS.boasVindas;
