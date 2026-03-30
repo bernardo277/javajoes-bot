@@ -315,7 +315,7 @@ function verificarFAQ(msg) {
   if (has(msg, 'fumante', 'fumar', 'cigarro')) return SCRIPTS.faq.fumantes;
   if (has(msg, 'cadeirante', 'acessivel', 'acessibilidade', 'cadeira de rodas')) return SCRIPTS.faq.cadeirante;
   if (has(msg, 'musica ao vivo', 'banda', 'dj', 'show')) return SCRIPTS.faq.musica;
-  if (has(msg, 'delivery', 'entrega', 'ifood', 'entregar')) return SCRIPTS.faq.delivery;
+  if (has(msg, 'delivery', 'entrega', 'ifood', 'entregar', 'entregam', 'motoboy', 'rappi', 'uber eats', 'ubereats', 'retirada', 'retirar', 'buscar', 'pedir online', 'pedir pelo app', 'aplicativo', 'leva', 'levar', 'tele entrega', 'teleentrega', 'em casa')) return SCRIPTS.faq.delivery;
   if (has(msg, 'kids', 'crianca', 'criancas', 'area infantil', 'filho')) return SCRIPTS.faq.kids;
   if (has(msg, 'cachorro', 'gato', 'pet', 'animal', 'bicho', 'cao', 'dog', 'papagaio', 'passaro', 'ave', 'felino', 'canino', 'hamster', 'coelho', 'reptil', 'cobra', 'lagarto', 'tartaruga', 'roedor', 'porquinho')) return SCRIPTS.faq.pets;
   return null;
@@ -631,13 +631,11 @@ async function getBotReply(userMsg, state) {
   const faqResp = verificarFAQ(msg);
   if (faqResp) return faqResp;
 
-  if (has(msg, 'preco', 'valor', 'quanto custa', 'caro', 'barato')) return SCRIPTS.op5;
-
   const menuNumero = rotearMenuNumero(msg, state);
   if (menuNumero) return menuNumero;
 
   if (has(msg, 'nosso espaco', 'espaco', 'ambiente', 'salao', 'capacidade', 'estrutura')) { state.step = 'menu'; return SCRIPTS.op1; }
-  if (has(msg, 'valores', 'horario', 'funcionamento', 'que horas', 'abre', 'fecha')) { state.step = 'menu'; return SCRIPTS.op2; }
+  if (has(msg, 'valores', 'horario', 'funcionamento', 'que horas', 'abre', 'fecha', 'preco', 'valor', 'quanto custa', 'caro', 'barato', 'cobram', 'cobra', 'custa', 'investimento', 'taxa', 'tarifa', 'mensalidade', 'preco do rodizio', 'quanto e')) { state.step = 'menu'; return SCRIPTS.op2; }
   if (has(msg, 'reserva', 'reservar', 'fazer reserva', 'quero reserva')) { state.step = 'reserva_dados'; state.reserva = {}; return SCRIPTS.op3_info; }
   if (has(msg, 'localizacao', 'endereco', 'onde fica', 'como chegar', 'maps', 'mapa')) { state.step = 'menu'; return SCRIPTS.op4; }
   if (has(msg, 'rodizio', 'a la carte', 'cardapio', 'sabores', 'pizza', 'massa', 'tamanho')) { state.step = 'menu'; return SCRIPTS.op5; }
