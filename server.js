@@ -57,6 +57,7 @@ Posso te ajudar com mais alguma coisa?
 
 Terça a quinta: R$ 59,99 com refil incluso (acima de 10 anos)
 Sexta a domingo: R$ 64,99 (acima de 10 anos) + refil R$ 14,99 (opcional)
+
 Crianças de 04 a 09 anos: R$ 43,99
 
 🕒 Funcionamento:
