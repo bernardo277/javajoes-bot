@@ -269,10 +269,20 @@ function extrairNome(text) {
   return null;
 }
 
+function normalizarMes(mes) {
+  const map = {
+    'janeiro':'janeiro','fevereiro':'fevereiro','marco':'março','março':'março',
+    'abril':'abril','maio':'maio','junho':'junho','julho':'julho',
+    'agosto':'agosto','setembro':'setembro','outubro':'outubro',
+    'novembro':'novembro','dezembro':'dezembro'
+  };
+  return map[mes.toLowerCase()] || mes;
+}
+
 function extrairData(text) {
   const meses = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
   const m1 = text.match(/(\d{1,2})\s+de\s+([a-záéíóúâêîôûãõç]+)/i);
-  if (m1) return `${m1[1]} de ${m1[2]}`;
+  if (m1) return `${m1[1]} de ${normalizarMes(m1[2])}`;
   const m2 = text.match(/dia\s+(\d{1,2})/i);
   if (m2) return `dia ${m2[1]}`;
   const m3 = text.match(/(\d{1,2})\/(\d{1,2})/);
