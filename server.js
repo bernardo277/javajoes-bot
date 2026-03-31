@@ -877,8 +877,28 @@ app.post('/webhook', async (req, res) => {
 });
 
 app.get('/testar-lembrete', async (req, res) => {
-  await enviarLembretesReserva();
-  res.send('✅ Lembretes enviados! Verifique o WhatsApp.');
+  try {
+    const amanha = horarioBrasil();
+    amanha.setDate(amanha.getDate() + 1);
+    const dataISO = amanha.toISOString().split('T')[0];
+
+    const resp = await axios.get(
+      `${SUPABASE_URL}/rest/v1/reservas?data=eq.${dataISO}&select=nome,whatsapp,pessoas`,
+      { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } }
+    );
+
+    const reservas = resp.data || [];
+    const info = reservas.map(r => ({ nome: r.nome, whatsapp: r.whatsapp, pessoas: r.pessoas }));
+
+    if (reservas.length === 0) {
+      return res.json({ dataConsultada: dataISO, reservas: 0, msg: 'Nenhuma reserva encontrada para amanhã.' });
+    }
+
+    await enviarLembretesReserva();
+    res.json({ dataConsultada: dataISO, reservas: info, msg: '✅ Mensagens enviadas!' });
+  } catch (err) {
+    res.json({ erro: err.message });
+  }
 });
 
 app.get('/ultima-resposta/:phone', (req, res) => {
