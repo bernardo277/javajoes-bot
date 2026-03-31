@@ -338,6 +338,16 @@ function avancarReserva(state) {
   const qtd = parseInt(pessoas);
   if (!isNaN(qtd) && qtd < 4) { state.step = 'menu'; return SCRIPTS.minimoNaoAtingido; }
   if (!isNaN(qtd) && qtd > 50) { state.step = 'menu'; return SCRIPTS.maximoUltrapassado; }
+  const dataISO = converterDataParaISO(data);
+  if (dataISO) {
+    const dataReserva = new Date(dataISO + 'T00:00:00');
+    const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
+    if (dataReserva < hoje) {
+      state.step = 'reserva_aguarda_data';
+      state.reserva = { ...state.reserva, data: null };
+      return `Ops! 😅 A data *${data}* já passou.\nPor favor, informe uma data futura para sua reserva.\n_(Digite 0 para voltar ao menu principal)_`;
+    }
+  }
   state.step = 'reserva_confirm';
   return SCRIPTS.op3_confirmar(nome, data, pessoas);
 }
