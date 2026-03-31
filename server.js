@@ -46,7 +46,8 @@ Meu nome é Giovana, fico feliz em te atender! Como posso te ajudar hoje?
 4 - Localização e endereço
 5 - Informações sobre o rodízio e à la carte
 6 - Alterar uma reserva
-7 - Falar com um dos nossos atendentes`,
+7 - Falar com um dos nossos atendentes
+8 - Ver vídeo do nosso espaço 🎥`,
 
   op1: `O Java Joe's é uma pizzaria com ambiente familiar e aconchegante, ideal para curtir com amigos e família. Nosso salão tem capacidade para cerca de 120 pessoas, com área kids de 18m² de muita diversão, oferecemos uma experiência completa com pizzas, massas, bebidas e sobremesas. 🍕
 
@@ -172,6 +173,7 @@ Enquanto isso, fique à vontade para aguardar aqui. 😊`,
 5 - Informações sobre o rodízio e à la carte
 6 - Alterar uma reserva
 7 - Falar com um dos nossos atendentes
+8 - Ver vídeo do nosso espaço 🎥
 0 - Voltar ao menu principal`,
 
   fallback: `Hmm, não sei se consigo te ajudar com isso. 😊
@@ -184,6 +186,7 @@ Mas posso te ajudar com:
 5 - Informações sobre o rodízio e à la carte
 6 - Alterar uma reserva
 7 - Falar com um dos nossos atendentes
+8 - Ver vídeo do nosso espaço 🎥
 0 - Voltar ao menu principal`,
 
   inatividade: `Parece que você se afastou! 😊 Encerrando sua sessão por inatividade. Quando quiser continuar é só mandar uma mensagem!`,
@@ -376,6 +379,7 @@ function rotearMenuNumero(msg, state) {
   if (msg === '5') { state.step = 'menu'; return SCRIPTS.op5; }
   if (msg === '6') { state.step = 'alterar_dados'; state.alteracao = {}; return `Para alterar sua reserva, me informe em uma mensagem:\n• Seu nome completo\n• Data da reserva\n• Nova quantidade de pessoas`; }
   if (msg === '7') { state.step = 'atendente_humano'; state.humanoAssumiuAt = Date.now(); return SCRIPTS.atendente; }
+  if (msg === '8') { state.step = 'menu'; return { texto: `Olha como é o nosso espaço! 😍🍕\nQualquer dúvida é só chamar.\n0 - Voltar ao menu principal`, video: 'https://drive.google.com/uc?export=download&id=1MROtreqDYhuzBX_KqogmIpOVIMET9L9K' }; }
   return null;
 }
 
