@@ -701,6 +701,53 @@ async function enviarMensagem(phone, message) {
   }
 }
 
+// ─── LEMBRETE DE RESERVA — ENVIO DIÁRIO ÀS 12H ────────────────────────────────
+
+function saudacaoPorHorario() {
+  const hora = new Date().getHours();
+  if (hora < 12) return 'Bom dia';
+  if (hora < 18) return 'Boa tarde';
+  return 'Boa noite';
+}
+
+async function enviarLembretesReserva() {
+  try {
+    const amanha = new Date();
+    amanha.setDate(amanha.getDate() + 1);
+    const dataISO = amanha.toISOString().split('T')[0];
+
+    const resp = await axios.get(
+      `${SUPABASE_URL}/rest/v1/reservas?data=eq.${dataISO}&select=nome,whatsapp,pessoas`,
+      { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } }
+    );
+
+    const reservas = resp.data || [];
+    console.log(`[${new Date().toLocaleTimeString()}] 📅 Lembretes: ${reservas.length} reserva(s) para amanhã`);
+
+    for (const r of reservas) {
+      if (!r.whatsapp) continue;
+      const primeiroNome = (r.nome || '').split(' ')[0];
+      const saudacao = saudacaoPorHorario();
+      const msg = `Olá, ${primeiroNome}! ${saudacao} 😊\n\nAmanhã você tem uma reserva conosco para *${r.pessoas} ${r.pessoas === 1 ? 'pessoa' : 'pessoas'}*.\n\nEstamos te aguardando!\nSejam todos bem-vindos. 🍕`;
+      await enviarMensagem(r.whatsapp, msg);
+      await new Promise(res => setTimeout(res, 2000)); // pausa entre envios
+    }
+  } catch (err) {
+    console.error(`[${new Date().toLocaleTimeString()}] ❌ Erro ao enviar lembretes:`, err.message);
+  }
+}
+
+// Verifica todo minuto se é hora de enviar (12:00)
+let lembreteEnviadoHoje = null;
+setInterval(() => {
+  const agora = new Date();
+  const hoje = agora.toDateString();
+  if (agora.getHours() === 12 && agora.getMinutes() === 0 && lembreteEnviadoHoje !== hoje) {
+    lembreteEnviadoHoje = hoje;
+    enviarLembretesReserva();
+  }
+}, 30 * 1000);
+
 // ─── TIMER — RETORNO DO BOT APÓS 30 MIN DE ATENDIMENTO HUMANO ─────────────────
 
 const INATIVIDADE_MS = 30 * 60 * 1000;
