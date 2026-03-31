@@ -327,7 +327,12 @@ function verificarFAQ(msg) {
   if (has(msg, 'cadeirante', 'acessivel', 'acessibilidade', 'cadeira de rodas')) return SCRIPTS.faq.cadeirante;
   if (has(msg, 'musica ao vivo', 'banda', 'dj', 'show')) return SCRIPTS.faq.musica;
   if (has(msg, 'delivery', 'entrega', 'ifood', 'entregar', 'entregam', 'motoboy', 'rappi', 'uber eats', 'ubereats', 'retirada', 'retirar', 'buscar', 'pedir online', 'pedir pelo app', 'aplicativo', 'leva', 'levar', 'tele entrega', 'teleentrega', 'em casa')) return SCRIPTS.faq.delivery;
-  if (has(msg, 'kids', 'crianca', 'criancas', 'area infantil', 'filho')) return SCRIPTS.faq.kids;
+  if (has(msg, 'foto', 'fotos', 'video', 'videos', 'ver o espaco', 'como e o espaco', 'como e o salao', 'ver o salao', 'ver o ambiente', 'como e o ambiente', 'mostra o espaco', 'mostra o salao')) {
+    return { texto: `Claro! Olha como é nosso espaço! 😍🍕\nQualquer dúvida é só chamar.\n0 - Voltar ao menu principal`, video: 'https://drive.google.com/uc?export=download&id=1MROtreqDYhuzBX_KqogmIpOVIMET9L9K' };
+  }
+  if (has(msg, 'kids', 'crianca', 'criancas', 'area infantil', 'filho', 'filhos', 'bebe', 'bebes')) {
+    return { texto: SCRIPTS.faq.kids, video: 'https://drive.google.com/uc?export=download&id=1JXJ-SGISvPDzheFnxlFOZHe5xDzbIobG' };
+  }
   if (has(msg, 'cachorro', 'gato', 'pet', 'animal', 'bicho', 'cao', 'dog', 'papagaio', 'passaro', 'ave', 'felino', 'canino', 'hamster', 'coelho', 'reptil', 'cobra', 'lagarto', 'tartaruga', 'roedor', 'porquinho')) return SCRIPTS.faq.pets;
   return null;
 }
@@ -721,6 +726,21 @@ async function enviarMensagem(phone, message) {
   }
 }
 
+async function enviarVideo(phone, videoUrl, caption = '') {
+  try {
+    await axios.post(`${ZAPI_URL}/send-video`, {
+      phone,
+      video: videoUrl,
+      caption
+    }, {
+      headers: { 'Client-Token': CLIENT_TOKEN }
+    });
+    console.log(`[${new Date().toLocaleTimeString()}] 🎥 Vídeo enviado para ${phone}`);
+  } catch (err) {
+    console.error(`[${new Date().toLocaleTimeString()}] ❌ Erro ao enviar vídeo para ${phone}:`, err.response?.data || err.message);
+  }
+}
+
 // ─── LEMBRETE DE RESERVA — ENVIO DIÁRIO ÀS 12H ────────────────────────────────
 
 function saudacaoPorHorario() {
@@ -833,7 +853,12 @@ app.post('/webhook', async (req, res) => {
     state._debounce = null;
     const reply = await getBotReply(state._ultimaMsg || text, state);
     state._ultimaMsg = null;
-    if (reply) await enviarMensagem(phone, reply);
+    if (reply && typeof reply === 'object' && reply.video) {
+      await enviarMensagem(phone, reply.texto);
+      await enviarVideo(phone, reply.video);
+    } else if (reply) {
+      await enviarMensagem(phone, reply);
+    }
   }, 2000);
   state._ultimaMsg = text;
 });
