@@ -331,10 +331,10 @@ function verificarFAQ(msg) {
   if (has(msg, 'musica ao vivo', 'banda', 'dj', 'show')) return SCRIPTS.faq.musica;
   if (has(msg, 'delivery', 'entrega', 'ifood', 'entregar', 'entregam', 'motoboy', 'rappi', 'uber eats', 'ubereats', 'retirada', 'retirar', 'buscar', 'pedir online', 'pedir pelo app', 'aplicativo', 'leva', 'levar', 'tele entrega', 'teleentrega', 'em casa')) return SCRIPTS.faq.delivery;
   if (has(msg, 'foto', 'fotos', 'video', 'videos', 'ver o espaco', 'como e o espaco', 'como e o salao', 'ver o salao', 'ver o ambiente', 'como e o ambiente', 'mostra o espaco', 'mostra o salao')) {
-    return { texto: `Claro! Olha como é nosso espaço! 😍🍕\nQualquer dúvida é só chamar.\n0 - Voltar ao menu principal`, video: 'https://drive.google.com/uc?export=download&id=1MROtreqDYhuzBX_KqogmIpOVIMET9L9K' };
+    return `Claro! Olha como é nosso espaço! 😍🍕\n\nhttps://youtu.be/BoOKjLbRXmU\n\nQualquer dúvida é só chamar.\n0 - Voltar ao menu principal`;
   }
   if (has(msg, 'kids', 'crianca', 'criancas', 'area infantil', 'filho', 'filhos', 'bebe', 'bebes')) {
-    return { texto: SCRIPTS.faq.kids, video: 'https://drive.google.com/uc?export=download&id=1JXJ-SGISvPDzheFnxlFOZHe5xDzbIobG' };
+    return `Sim, temos área kids! 🎉\nNosso espaço é ótimo para toda a família. As crianças ficam à vontade enquanto vocês aproveitam a refeição.\n\nVeja nossa área kids aqui 👇\nhttps://youtube.com/shorts/skVxcsSQJfY\n\nE vem novidade por aí! 🎉 Em breve abre o Java Kids — um espaço feito especialmente para as crianças se divertirem. Quer ficar por dentro? Segue a gente no Instagram: 👉 instagram.com/javajoespizzariakids\n\nPosso te ajudar com mais alguma coisa?\n0 - Voltar ao menu principal`;
   }
   if (has(msg, 'cachorro', 'gato', 'pet', 'animal', 'bicho', 'cao', 'dog', 'papagaio', 'passaro', 'ave', 'felino', 'canino', 'hamster', 'coelho', 'reptil', 'cobra', 'lagarto', 'tartaruga', 'roedor', 'porquinho')) return SCRIPTS.faq.pets;
   return null;
@@ -379,7 +379,7 @@ function rotearMenuNumero(msg, state) {
   if (msg === '5') { state.step = 'menu'; return SCRIPTS.op5; }
   if (msg === '6') { state.step = 'alterar_dados'; state.alteracao = {}; return `Para alterar sua reserva, me informe em uma mensagem:\n• Seu nome completo\n• Data da reserva\n• Nova quantidade de pessoas`; }
   if (msg === '7') { state.step = 'atendente_humano'; state.humanoAssumiuAt = Date.now(); return SCRIPTS.atendente; }
-  if (msg === '8') { state.step = 'menu'; return { texto: `Olha como é o nosso espaço! 😍🍕\nQualquer dúvida é só chamar.\n0 - Voltar ao menu principal`, video: 'https://drive.google.com/uc?export=download&id=1MROtreqDYhuzBX_KqogmIpOVIMET9L9K' }; }
+  if (msg === '8') { state.step = 'menu'; return `Olha como é o nosso espaço! 😍🍕\n\nhttps://youtu.be/BoOKjLbRXmU\n\nQualquer dúvida é só chamar.\n0 - Voltar ao menu principal`; }
   return null;
 }
 
