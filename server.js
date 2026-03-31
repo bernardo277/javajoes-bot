@@ -876,6 +876,11 @@ app.post('/webhook', async (req, res) => {
   state._ultimaMsg = text;
 });
 
+app.get('/testar-lembrete', async (req, res) => {
+  await enviarLembretesReserva();
+  res.send('✅ Lembretes enviados! Verifique o WhatsApp.');
+});
+
 app.get('/ultima-resposta/:phone', (req, res) => {
   res.json({ msg: ultimasRespostas[req.params.phone] || null });
 });
