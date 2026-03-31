@@ -747,8 +747,15 @@ async function enviarVideo(phone, videoUrl, caption = '') {
 
 // ─── LEMBRETE DE RESERVA — ENVIO DIÁRIO ÀS 12H ────────────────────────────────
 
+function horarioBrasil() {
+  // Railway roda em UTC — Brasil é UTC-3
+  const agora = new Date();
+  agora.setHours(agora.getHours() - 3);
+  return agora;
+}
+
 function saudacaoPorHorario() {
-  const hora = new Date().getHours();
+  const hora = horarioBrasil().getHours();
   if (hora < 12) return 'Bom dia';
   if (hora < 18) return 'Boa tarde';
   return 'Boa noite';
@@ -756,7 +763,7 @@ function saudacaoPorHorario() {
 
 async function enviarLembretesReserva() {
   try {
-    const amanha = new Date();
+    const amanha = horarioBrasil();
     amanha.setDate(amanha.getDate() + 1);
     const dataISO = amanha.toISOString().split('T')[0];
 
@@ -781,12 +788,14 @@ async function enviarLembretesReserva() {
   }
 }
 
-// Verifica todo minuto se é hora de enviar (12:00)
+// Verifica a cada 30s se é hora de enviar (12:00 horário Brasil)
 let lembreteEnviadoHoje = null;
 setInterval(() => {
-  const agora = new Date();
+  const agora = horarioBrasil();
   const hoje = agora.toDateString();
-  if (agora.getHours() === 12 && agora.getMinutes() === 0 && lembreteEnviadoHoje !== hoje) {
+  const hora = agora.getHours();
+  const min = agora.getMinutes();
+  if (hora === 12 && min < 5 && lembreteEnviadoHoje !== hoje) {
     lembreteEnviadoHoje = hoje;
     enviarLembretesReserva();
   }
