@@ -730,6 +730,19 @@ async function enviarMensagem(phone, message) {
   }
 }
 
+const DONO_PHONE = '5521973020782';
+
+async function notificarDono(mensagem) {
+  try {
+    await axios.post(`${ZAPI_URL}/send-text`, {
+      phone: DONO_PHONE,
+      message: mensagem
+    }, { headers: { 'Client-Token': CLIENT_TOKEN } });
+  } catch (err) {
+    console.error('Erro ao notificar dono:', err.message);
+  }
+}
+
 async function enviarVideo(phone, videoUrl, caption = '') {
   try {
     await axios.post(`${ZAPI_URL}/send-video`, {
@@ -781,6 +794,7 @@ async function enviarLembretesReserva() {
       const saudacao = saudacaoPorHorario();
       const msg = `Olá, ${primeiroNome}! ${saudacao} 😊\n\nAmanhã você tem uma reserva conosco para *${r.pessoas} ${r.pessoas === 1 ? 'pessoa' : 'pessoas'}*.\n\nEstamos te aguardando!\nSejam todos bem-vindos. 🍕`;
       await enviarMensagem(r.whatsapp, msg);
+      await notificarDono(`🔔 Lembrete enviado para *${r.nome}* (${r.whatsapp})`);
       await new Promise(res => setTimeout(res, 2000)); // pausa entre envios
     }
   } catch (err) {
@@ -864,6 +878,7 @@ app.post('/webhook', async (req, res) => {
   if (state._debounce) clearTimeout(state._debounce);
   state._debounce = setTimeout(async () => {
     state._debounce = null;
+    const stepAntes = state.step;
     const reply = await getBotReply(state._ultimaMsg || text, state);
     state._ultimaMsg = null;
     if (reply && typeof reply === 'object' && reply.video) {
@@ -871,6 +886,9 @@ app.post('/webhook', async (req, res) => {
       await enviarVideo(phone, reply.video);
     } else if (reply) {
       await enviarMensagem(phone, reply);
+    }
+    if (stepAntes !== 'atendente_humano' && stepAntes !== 'humano_ativo' && state.step === 'atendente_humano') {
+      await notificarDono(`👤 Cliente encaminhado para atendimento humano\nNúmero: *${phone}*`);
     }
   }, 2000);
   state._ultimaMsg = text;
