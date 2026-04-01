@@ -802,14 +802,14 @@ async function enviarLembretesReserva() {
   }
 }
 
-// Verifica a cada 30s se é hora de enviar (12:00 horário Brasil)
+// Verifica a cada 30s se é hora de enviar (10:00 horário Brasil)
 let lembreteEnviadoHoje = null;
 setInterval(() => {
   const agora = horarioBrasil();
   const hoje = agora.toDateString();
   const hora = agora.getHours();
   const min = agora.getMinutes();
-  if (hora === 12 && min < 5 && lembreteEnviadoHoje !== hoje) {
+  if (hora === 10 && min < 5 && lembreteEnviadoHoje !== hoje) {
     lembreteEnviadoHoje = hoje;
     enviarLembretesReserva();
   }
