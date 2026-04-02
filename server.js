@@ -206,7 +206,7 @@ Mas posso te ajudar com:
     cadeirante: `Infelizmente nosso espaço ainda não é totalmente acessível para cadeirantes. Pedimos desculpas pela limitação. 🙏\nPosso te ajudar com mais alguma coisa?\n0 - Voltar ao menu principal`,
     musica: `No momento não temos música ao vivo ou DJ. 😊\nPosso te ajudar com mais alguma coisa?\n0 - Voltar ao menu principal`,
     delivery: `Fazemos entregas somente pelo iFood! 🛵\nNos encontre lá e aproveite nossas opções no conforto da sua casa. 😊\nPosso te ajudar com mais alguma coisa?\n0 - Voltar ao menu principal`,
-    kids: `Sim, temos área kids! 🎉\nNosso espaço é ótimo para toda a família. As crianças ficam à vontade enquanto vocês aproveitam a refeição.\n\nE vem novidade por aí! 🎉 Em breve abre o Java Kids — um espaço feito especialmente para as crianças se divertirem. Quer ficar por dentro? Segue a gente no Instagram: 👉 instagram.com/javajoespizzariakids\n\nPosso te ajudar com mais alguma coisa?\n0 - Voltar ao menu principal`,
+    kids: `Sim, temos área kids! 🎉\nNosso espaço é ótimo para toda a família. As crianças ficam à vontade enquanto vocês aproveitam o nosso rodízio.\n\nE vem novidade por aí! 🎉 Em breve abre o Java Kids — um espaço feito especialmente para as crianças se divertirem. Quer ficar por dentro? Segue a gente no Instagram: 👉 instagram.com/javajoespizzariakids\n\nPosso te ajudar com mais alguma coisa?\n0 - Voltar ao menu principal`,
     pets: `Infelizmente não aceitamos animais de estimação no restaurante, por questões de higiene e segurança alimentar. 🐾\nIsso inclui cachorros, gatos, pássaros, papagaios e demais animais.\nAgradecemos a compreensão!\n\nPosso te ajudar com mais alguma coisa?\n0 - Voltar ao menu principal`,
   }
 };
@@ -334,7 +334,7 @@ function verificarFAQ(msg) {
     return `Claro! Olha como é nosso espaço e nossa área kids! 😍🍕\n\nhttps://youtu.be/L1_fNXLwJHQ\n\nQualquer dúvida é só chamar.\n0 - Voltar ao menu principal`;
   }
   if (has(msg, 'kids', 'crianca', 'criancas', 'area infantil', 'filho', 'filhos', 'bebe', 'bebes')) {
-    return `Sim, temos área kids! 🎉\nNosso espaço é ótimo para toda a família. As crianças ficam à vontade enquanto vocês aproveitam a refeição.\n\nVeja nosso espaço e área kids aqui 👇\nhttps://youtu.be/L1_fNXLwJHQ\n\nE vem novidade por aí! 🎉 Em breve abre o Java Kids — um espaço feito especialmente para as crianças se divertirem. Quer ficar por dentro? Segue a gente no Instagram: 👉 instagram.com/javajoespizzariakids\n\nPosso te ajudar com mais alguma coisa?\n0 - Voltar ao menu principal`;
+    return `Sim, temos área kids! 🎉\nNosso espaço é ótimo para toda a família. As crianças ficam à vontade enquanto vocês aproveitam o nosso rodízio.\n\nVeja nosso espaço e área kids aqui 👇\nhttps://youtu.be/L1_fNXLwJHQ\n\nE vem novidade por aí! 🎉 Em breve abre o Java Kids — um espaço feito especialmente para as crianças se divertirem. Quer ficar por dentro? Segue a gente no Instagram: 👉 instagram.com/javajoespizzariakids\n\nPosso te ajudar com mais alguma coisa?\n0 - Voltar ao menu principal`;
   }
   if (has(msg, 'cachorro', 'gato', 'pet', 'animal', 'bicho', 'cao', 'dog', 'papagaio', 'passaro', 'ave', 'felino', 'canino', 'hamster', 'coelho', 'reptil', 'cobra', 'lagarto', 'tartaruga', 'roedor', 'porquinho')) return SCRIPTS.faq.pets;
   return null;
