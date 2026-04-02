@@ -505,6 +505,15 @@ async function verificarDisponibilidadeAlteracao(dataISO, pessoasAntigas, pessoa
 async function getBotReply(userMsg, state) {
   const msg = normalize(userMsg);
 
+  // Senha secreta do dono — reseta estado e volta o bot imediatamente
+  if (msg === '191088') {
+    state.step = 'menu';
+    state.reserva = {};
+    state.alteracao = {};
+    state.humanoAssumiuAt = null;
+    return SCRIPTS.boasVindas;
+  }
+
   // Opção 0: volta ao menu — mas não interrompe atendimento humano
   if (msg === '0' && state.step !== 'atendente_humano' && state.step !== 'humano_ativo') {
     state.step = 'menu';
