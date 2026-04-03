@@ -879,9 +879,9 @@ app.post('/webhook', async (req, res) => {
   const phone = body?.phone || body?.message?.phone;
   const text = body?.message?.text?.message || body?.text?.message || body?.text;
 
-  // Detectar resposta do dono no formato "numero | mensagem"
+  // Detectar resposta do dono no formato "numero | mensagem" ou "numero/ mensagem"
   if (phone === DONO_PHONE && text) {
-    const match = text.match(/^(\d{10,15})\s*\|\s*(.+)$/s);
+    const match = text.match(/^(\d{10,15})\s*[|\/]\s*(.+)$/s);
     if (match) {
       const clientePhone = match[1].trim();
       const resposta = match[2].trim();
@@ -894,6 +894,8 @@ app.post('/webhook', async (req, res) => {
       console.log(`[${new Date().toLocaleTimeString()}] 📤 Dono respondeu para ${clientePhone}`);
       return;
     }
+    // Mensagem do dono que não é relay — ignorar, não reencaminhar
+    return;
   }
 
   if (!phone || !text) return;
