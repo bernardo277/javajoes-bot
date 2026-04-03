@@ -522,9 +522,13 @@ async function getBotReply(userMsg, state) {
     return SCRIPTS.boasVindas;
   }
 
-  // Bot silencioso durante atendimento humano
+  // Bot em modo relay durante atendimento humano
   if (state.step === 'atendente_humano' || state.step === 'humano_ativo') {
-    if (Date.now() - (state.humanoAssumiuAt || 0) < 30 * 60 * 1000) return null;
+    if (Date.now() - (state.humanoAssumiuAt || 0) < 30 * 60 * 1000) {
+      // Encaminha mensagem do cliente para o dono
+      await notificarDono(`💬 *${state.phone}*:\n"${userMsg}"\n\nResponda: *${state.phone} | sua mensagem*`);
+      return null;
+    }
     // 30 min passaram — bot retoma
     state.step = 'menu';
     state.humanoAssumiuAt = null;
@@ -875,6 +879,23 @@ app.post('/webhook', async (req, res) => {
   const phone = body?.phone || body?.message?.phone;
   const text = body?.message?.text?.message || body?.text?.message || body?.text;
 
+  // Detectar resposta do dono no formato "numero | mensagem"
+  if (phone === DONO_PHONE && text) {
+    const match = text.match(/^(\d{10,15})\s*\|\s*(.+)$/s);
+    if (match) {
+      const clientePhone = match[1].trim();
+      const resposta = match[2].trim();
+      await enviarMensagem(clientePhone, resposta);
+      // Renova o timer do cliente
+      if (userStates[clientePhone]) {
+        userStates[clientePhone].step = 'humano_ativo';
+        userStates[clientePhone].humanoAssumiuAt = Date.now();
+      }
+      console.log(`[${new Date().toLocaleTimeString()}] 📤 Dono respondeu para ${clientePhone}`);
+      return;
+    }
+  }
+
   if (!phone || !text) return;
 
   console.log(`[${new Date().toLocaleTimeString()}] 📩 ${phone}: ${text}`);
@@ -897,7 +918,7 @@ app.post('/webhook', async (req, res) => {
       await enviarMensagem(phone, reply);
     }
     if (stepAntes !== 'atendente_humano' && stepAntes !== 'humano_ativo' && state.step === 'atendente_humano') {
-      await notificarDono(`👤 Cliente encaminhado para atendimento humano\nNúmero: *${phone}*`);
+      await notificarDono(`👤 *${phone}* foi para atendimento humano\nÚltima mensagem: "${state._ultimaMsg || text}"\n\nPara responder: *${phone} | sua mensagem*`);
     }
   }, 2000);
   state._ultimaMsg = text;
