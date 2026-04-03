@@ -879,22 +879,37 @@ app.post('/webhook', async (req, res) => {
   const phone = body?.phone || body?.message?.phone;
   const text = body?.message?.text?.message || body?.text?.message || body?.text;
 
-  // Detectar resposta do dono no formato "numero | mensagem" ou "numero/ mensagem"
+  // Mensagem do dono — relay para cliente em atendimento humano
   if (phone === DONO_PHONE && text) {
+    // Formato explícito: "numero | mensagem" ou "numero/ mensagem"
     const match = text.match(/^(\d{10,15})\s*[|\/]\s*(.+)$/s);
     if (match) {
       const clientePhone = match[1].trim();
       const resposta = match[2].trim();
       await enviarMensagem(clientePhone, resposta);
-      // Renova o timer do cliente
       if (userStates[clientePhone]) {
         userStates[clientePhone].step = 'humano_ativo';
         userStates[clientePhone].humanoAssumiuAt = Date.now();
       }
-      console.log(`[${new Date().toLocaleTimeString()}] 📤 Dono respondeu para ${clientePhone}`);
       return;
     }
-    // Mensagem do dono que não é relay — ignorar, não reencaminhar
+    // Sem número: encaminha para o único cliente em atendimento humano
+    const clientesAtivos = Object.entries(userStates).filter(([p, s]) =>
+      p !== DONO_PHONE && (s.step === 'atendente_humano' || s.step === 'humano_ativo')
+    );
+    if (clientesAtivos.length === 1) {
+      const [clientePhone, clienteState] = clientesAtivos[0];
+      await enviarMensagem(clientePhone, text);
+      clienteState.step = 'humano_ativo';
+      clienteState.humanoAssumiuAt = Date.now();
+      return;
+    }
+    if (clientesAtivos.length > 1) {
+      // Avisa que precisa especificar o número
+      await notificarDono(`⚠️ Há ${clientesAtivos.length} clientes em atendimento. Use o formato:\n*numero | mensagem*\n\nClientes:\n${clientesAtivos.map(([p]) => p).join('\n')}`);
+      return;
+    }
+    // Nenhum cliente em atendimento — ignorar
     return;
   }
 
