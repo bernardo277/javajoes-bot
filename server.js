@@ -720,6 +720,13 @@ async function getBotReply(userMsg, state) {
     return SCRIPTS.boasVindas;
   }
 
+  // Tenta detectar número de opção mencionado dentro de uma frase
+  const numMencao = msg.match(/\b([1-8])\b/);
+  if (numMencao) {
+    const menuResp = rotearMenuNumero(numMencao[1], state);
+    if (menuResp) return menuResp;
+  }
+
   // Bot não sabe responder — silencioso, encaminha para humano
   state.step = 'atendente_humano';
   state.humanoAssumiuAt = Date.now();
@@ -822,7 +829,7 @@ setInterval(() => {
   const hoje = agora.toDateString();
   const hora = agora.getHours();
   const min = agora.getMinutes();
-  if (hora === 10 && min < 5 && lembreteEnviadoHoje !== hoje) {
+  if (hora === 10 && min < 30 && lembreteEnviadoHoje !== hoje) {
     lembreteEnviadoHoje = hoje;
     enviarLembretesReserva();
   }
@@ -880,7 +887,7 @@ app.post('/webhook', async (req, res) => {
   const text = body?.message?.text?.message || body?.text?.message || body?.text;
 
   // Mensagem do dono — relay para cliente em atendimento humano
-  if (phone === DONO_PHONE && text) {
+  if (phone === DONO_PHONE && text && text.trim() !== '191088') {
     // Formato explícito: "numero | mensagem" ou "numero/ mensagem"
     const match = text.match(/^(\d{10,15})\s*[|\/]\s*(.+)$/s);
     if (match) {
