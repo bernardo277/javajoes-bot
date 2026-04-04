@@ -678,14 +678,15 @@ async function getBotReply(userMsg, state) {
   if (menuNumero) return menuNumero;
 
   if (has(msg, 'nosso espaco', 'espaco', 'ambiente', 'salao', 'capacidade', 'estrutura')) { state.step = 'menu'; return SCRIPTS.op1; }
-  if (has(msg, 'valores', 'horario', 'funcionamento', 'que horas', 'abre', 'fecha', 'preco', 'valor', 'quanto custa', 'caro', 'barato', 'cobram', 'cobra', 'custa', 'investimento', 'taxa', 'tarifa', 'mensalidade', 'preco do rodizio', 'quanto e')) { state.step = 'menu'; return SCRIPTS.op2; }
-  if (has(msg, 'reserva', 'reservar', 'fazer reserva', 'quero reserva')) { state.step = 'reserva_dados'; state.reserva = {}; return SCRIPTS.op3_info; }
+  if (has(msg, 'valores', 'horario', 'funcionamento', 'que horas abre', 'que horas fecha', 'horario de funcionamento', 'preco', 'valor', 'quanto custa', 'caro', 'barato', 'cobram', 'cobra', 'custa', 'investimento', 'taxa', 'tarifa', 'mensalidade', 'preco do rodizio', 'quanto e')) { state.step = 'menu'; return SCRIPTS.op2; }
+  if (has(msg, 'reserva', 'reservar', 'fazer reserva', 'quero reserva') && !has(msg, 'cancelar', 'cancelamento', 'desmarcar', 'desistir', 'nao quero mais')) { state.step = 'reserva_dados'; state.reserva = {}; return SCRIPTS.op3_info; }
   if (has(msg, 'localizacao', 'endereco', 'onde fica', 'como chegar', 'maps', 'mapa')) { state.step = 'menu'; return SCRIPTS.op4; }
   if (has(msg, 'rodizio', 'a la carte', 'cardapio', 'sabores', 'pizza', 'massa', 'tamanho')) { state.step = 'menu'; return SCRIPTS.op5; }
 
-  if (has(msg, 'cancelar', 'cancelamento', 'desmarcar', 'desistir')) {
-    state.step = 'cancelar_dados';
-    return SCRIPTS.cancelar_solicitar;
+  if (has(msg, 'cancelar', 'cancelamento', 'desmarcar', 'desistir', 'nao quero mais', 'quero cancelar')) {
+    state.step = 'atendente_humano';
+    state.humanoAssumiuAt = Date.now();
+    return `Entendido! 😊 Vou te conectar com um de nossos atendentes para te ajudar com o cancelamento.\nUm momento! 👋`;
   }
 
   if (has(msg, 'atendente', 'humano', 'pessoa real', 'falar com alguem', 'atendimento humano')) {
@@ -904,11 +905,16 @@ app.post('/webhook', async (req, res) => {
 
   // Detectar quando humano assume a conversa (mensagem enviada pelo dono)
   if (body?.fromMe || body?.message?.fromMe) {
-    const phoneAlvo = body?.phone || body?.message?.phone;
-    if (phoneAlvo && userStates[phoneAlvo]) {
-      userStates[phoneAlvo].step = 'humano_ativo';
-      userStates[phoneAlvo].humanoAssumiuAt = Date.now();
-      console.log(`[${new Date().toLocaleTimeString()}] 👤 Humano assumiu conversa com ${phoneAlvo}`);
+    const phoneRaw = body?.phone || body?.message?.phone || '';
+    // Normaliza: garante prefixo 55 para números brasileiros
+    const phoneAlvo = phoneRaw.replace(/\D/g, '').replace(/^0/, '').replace(/^(?!55)(\d{10,11})$/, '55$1');
+    // Tenta encontrar o estado pelo número exato ou sem prefixo 55
+    const stateKey = userStates[phoneAlvo] ? phoneAlvo
+      : Object.keys(userStates).find(k => k.endsWith(phoneRaw.replace(/\D/g, '').slice(-10)));
+    if (stateKey && userStates[stateKey]) {
+      userStates[stateKey].step = 'humano_ativo';
+      userStates[stateKey].humanoAssumiuAt = Date.now();
+      console.log(`[${new Date().toLocaleTimeString()}] 👤 Humano assumiu conversa com ${stateKey}`);
     }
     return;
   }
