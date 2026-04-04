@@ -1003,6 +1003,15 @@ app.get('/testar-lembrete', async (req, res) => {
   }
 });
 
+app.get('/testar-chegada', async (req, res) => {
+  try {
+    await enviarAvisoChegada();
+    res.json({ msg: '✅ Aviso de chegada enviado!' });
+  } catch (err) {
+    res.json({ erro: err.message });
+  }
+});
+
 app.get('/ultima-resposta/:phone', (req, res) => {
   res.json({ msg: ultimasRespostas[req.params.phone] || null });
 });
