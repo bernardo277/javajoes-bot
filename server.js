@@ -822,8 +822,34 @@ async function enviarLembretesReserva() {
   }
 }
 
-// Verifica a cada 30s se é hora de enviar (10:00 horário Brasil)
+async function enviarAvisoChegada() {
+  try {
+    const hoje = horarioBrasil();
+    const dataISO = hoje.toISOString().split('T')[0];
+
+    const resp = await axios.get(
+      `${SUPABASE_URL}/rest/v1/reservas?data=eq.${dataISO}&status=neq.CHEGOU&select=nome,whatsapp,pessoas`,
+      { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } }
+    );
+
+    const reservas = resp.data || [];
+    console.log(`[${new Date().toLocaleTimeString()}] 🕖 Aviso 19h: ${reservas.length} reserva(s) sem chegada`);
+
+    for (const r of reservas) {
+      if (!r.whatsapp) continue;
+      const primeiroNome = (r.nome || '').split(' ')[0];
+      const msg = `Boa noite, ${primeiroNome}! 😊🍕\n\nSua reserva para *${r.pessoas} ${r.pessoas === 1 ? 'pessoa' : 'pessoas'}* está confirmada e já estamos te aguardando!\n\nLembre-se: as reservas ficam garantidas até as *19h30*. Está a caminho? ❤️`;
+      await enviarMensagem(r.whatsapp, msg);
+      await new Promise(res => setTimeout(res, 2000));
+    }
+  } catch (err) {
+    console.error(`[${new Date().toLocaleTimeString()}] ❌ Erro no aviso de chegada:`, err.message);
+  }
+}
+
+// Verifica a cada 30s se é hora de enviar (10:00 ou 19:00 horário Brasil)
 let lembreteEnviadoHoje = null;
+let avisoChegadaEnviadoHoje = null;
 setInterval(() => {
   const agora = horarioBrasil();
   const hoje = agora.toDateString();
@@ -832,6 +858,10 @@ setInterval(() => {
   if (hora === 10 && min < 30 && lembreteEnviadoHoje !== hoje) {
     lembreteEnviadoHoje = hoje;
     enviarLembretesReserva();
+  }
+  if (hora === 19 && min < 30 && avisoChegadaEnviadoHoje !== hoje) {
+    avisoChegadaEnviadoHoje = hoje;
+    enviarAvisoChegada();
   }
 }, 30 * 1000);
 
