@@ -66,6 +66,7 @@ Crianças de 04 a 09 anos: R$ 43,99
 🕒 Funcionamento:
 Terça a Domingo: 18h às 23h
 🚫 Segunda-feira: fechado
+✅ Funcionamos normalmente nos feriados
 
 Posso te ajudar com mais alguma coisa?
 0 - Voltar ao menu principal`,
@@ -505,12 +506,13 @@ async function verificarDisponibilidadeAlteracao(dataISO, pessoasAntigas, pessoa
 async function getBotReply(userMsg, state) {
   const msg = normalize(userMsg);
 
-  // Senha secreta do dono — reseta estado e volta o bot imediatamente
+  // Senha secreta do dono — reseta estado e entra em modo cliente
   if (msg === '191088') {
     state.step = 'menu';
     state.reserva = {};
     state.alteracao = {};
     state.humanoAssumiuAt = null;
+    state.modoCliente = true;
     return SCRIPTS.boasVindas;
   }
 
@@ -922,8 +924,9 @@ app.post('/webhook', async (req, res) => {
   const phone = body?.phone || body?.message?.phone;
   const text = body?.message?.text?.message || body?.text?.message || body?.text;
 
-  // Mensagem do dono — relay para cliente em atendimento humano
-  if (phone === DONO_PHONE && text && text.trim() !== '191088') {
+  // Mensagem do dono — relay para cliente em atendimento humano (ignorado em modo cliente)
+  const _stateDonoParaCheck = userStates[DONO_PHONE];
+  if (phone === DONO_PHONE && text && text.trim() !== '191088' && !_stateDonoParaCheck?.modoCliente) {
     // Formato explícito: "numero | mensagem" ou "numero/ mensagem"
     const match = text.match(/^(\d{10,15})\s*[|\/]\s*(.+)$/s);
     if (match) {
