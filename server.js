@@ -503,6 +503,20 @@ async function verificarDisponibilidadeAlteracao(dataISO, pessoasAntigas, pessoa
 
 // ─── BOT ─────────────────────────────────────────────────────────────────────
 
+// Tenta gerar resposta sem modificar state (para sugestão durante atendimento humano)
+function tentarRespostaBot(userMsg) {
+  const msg = normalize(userMsg);
+  const faq = verificarFAQ(msg);
+  if (faq && typeof faq === 'string') return faq;
+  if (has(msg, 'nosso espaco', 'espaco', 'ambiente', 'salao', 'capacidade', 'estrutura')) return SCRIPTS.op1;
+  if (has(msg, 'valores', 'horario', 'funcionamento', 'que horas abre', 'que horas fecha', 'preco', 'valor', 'quanto custa', 'caro', 'barato', 'cobram', 'cobra', 'custa', 'investimento', 'taxa')) return SCRIPTS.op2;
+  if (has(msg, 'localizacao', 'endereco', 'onde fica', 'como chegar', 'maps', 'mapa')) return SCRIPTS.op4;
+  if (has(msg, 'rodizio', 'a la carte', 'cardapio', 'sabores', 'pizza', 'massa', 'tamanho')) return SCRIPTS.op5;
+  if (has(msg, 'oi', 'ola', 'bom dia', 'boa tarde', 'boa noite', 'tudo bem', 'hello', 'boas')) return SCRIPTS.boasVindas;
+  if (has(msg, 'obrigado', 'obrigada', 'valeu', 'muito obrigado', 'ate logo', 'tchau', 'ate mais')) return `De nada! 😊 Foi um prazer te atender!\nSe precisar de mais alguma coisa, é só chamar. Te esperamos no Java Joe's! 🍕`;
+  return null;
+}
+
 async function getBotReply(userMsg, state) {
   const msg = normalize(userMsg);
 
@@ -527,8 +541,14 @@ async function getBotReply(userMsg, state) {
   // Bot em modo relay durante atendimento humano
   if (state.step === 'atendente_humano' || state.step === 'humano_ativo') {
     if (Date.now() - (state.humanoAssumiuAt || 0) < 30 * 60 * 1000) {
-      // Encaminha mensagem do cliente para o dono
-      await notificarDono(`💬 *${state.phone}*:\n"${userMsg}"\n\nResponda: *${state.phone} | sua mensagem*`);
+      // Encaminha mensagem do cliente para o dono (com sugestão se souber responder)
+      const sugestao = tentarRespostaBot(userMsg);
+      if (sugestao) {
+        pendingBotReplies[state.phone] = sugestao;
+        await notificarDono(`💬 *${state.phone}*:\n"${userMsg}"\n\n🤖 Sei responder isso:\n${sugestao}\n\nResponda:\n✅ *ok* — envio\n❌ *nao* — não envio\n*${state.phone} | mensagem* — resposta manual`);
+      } else {
+        await notificarDono(`💬 *${state.phone}*:\n"${userMsg}"\n\nResponda: *${state.phone} | sua mensagem*`);
+      }
       return null;
     }
     // 30 min passaram — bot retoma
@@ -757,6 +777,7 @@ async function enviarMensagem(phone, message) {
 }
 
 const DONO_PHONE = '5521973020782';
+const pendingBotReplies = {}; // { clientePhone: respostaTexto }
 
 async function notificarDono(mensagem) {
   try {
@@ -966,6 +987,65 @@ app.post('/webhook', async (req, res) => {
       } else {
         await notificarDono(`⚠️ Não consegui extrair todos os dados.\nEncontrei: nome=${nome || '?'}, data=${dataISO || '?'}, pessoas=${pessoas || '?'}\nFormato: reserva NUMERO | Nome, 10/04, 4 pessoas`);
       }
+      return;
+    }
+
+    // Comando: "ok" — dono aprova sugestão do bot
+    if (text.trim().toLowerCase() === 'ok') {
+      const pendentes = Object.entries(pendingBotReplies);
+      if (pendentes.length === 1) {
+        const [clientePhone, resposta] = pendentes[0];
+        delete pendingBotReplies[clientePhone];
+        await enviarMensagem(clientePhone, resposta);
+        return;
+      }
+      if (pendentes.length > 1) {
+        await notificarDono(`⚠️ Há ${pendentes.length} respostas pendentes. Use:\n*ok NUMERO* para confirmar qual`);
+        return;
+      }
+      // nenhuma pendente — cai no relay normal
+    }
+
+    // Comando: "ok NUMERO" — aprova sugestão para cliente específico
+    const matchOk = text.trim().match(/^ok\s+(\d{10,15})$/i);
+    if (matchOk) {
+      const alvo = matchOk[1].replace(/\D/g, '').replace(/^(?!55)(\d{10,11})$/, '55$1');
+      const alvoKey = pendingBotReplies[alvo]
+        ? alvo
+        : Object.keys(pendingBotReplies).find(k => k.endsWith(alvo.slice(-10)));
+      if (alvoKey) {
+        const resposta = pendingBotReplies[alvoKey];
+        delete pendingBotReplies[alvoKey];
+        await enviarMensagem(alvoKey, resposta);
+      } else {
+        await notificarDono(`⚠️ Nenhuma sugestão pendente para ${alvo}`);
+      }
+      return;
+    }
+
+    // Comando: "nao" — dono recusa sugestão do bot
+    if (text.trim().toLowerCase() === 'nao' || text.trim().toLowerCase() === 'não') {
+      const pendentes = Object.entries(pendingBotReplies);
+      if (pendentes.length === 1) {
+        const [clientePhone] = pendentes[0];
+        delete pendingBotReplies[clientePhone];
+        return;
+      }
+      if (pendentes.length > 1) {
+        await notificarDono(`⚠️ Há ${pendentes.length} respostas pendentes. Use:\n*nao NUMERO* para recusar qual`);
+        return;
+      }
+      // nenhuma pendente — cai no relay normal
+    }
+
+    // Comando: "nao NUMERO" — recusa sugestão para cliente específico
+    const matchNao = text.trim().match(/^n[aã]o\s+(\d{10,15})$/i);
+    if (matchNao) {
+      const alvo = matchNao[1].replace(/\D/g, '').replace(/^(?!55)(\d{10,11})$/, '55$1');
+      const alvoKey = pendingBotReplies[alvo]
+        ? alvo
+        : Object.keys(pendingBotReplies).find(k => k.endsWith(alvo.slice(-10)));
+      if (alvoKey) delete pendingBotReplies[alvoKey];
       return;
     }
 
