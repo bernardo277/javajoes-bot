@@ -379,7 +379,7 @@ function rotearMenuNumero(msg, state) {
   if (msg === '4') { state.step = 'menu'; return SCRIPTS.op4; }
   if (msg === '5') { state.step = 'menu'; return SCRIPTS.op5; }
   if (msg === '6') { state.step = 'alterar_dados'; state.alteracao = {}; return `Para alterar sua reserva, me informe em uma mensagem:\n• Seu nome completo\n• Data da reserva\n• Nova quantidade de pessoas`; }
-  if (msg === '7') { state.step = 'atendente_humano'; state.humanoAssumiuAt = Date.now(); return SCRIPTS.atendente; }
+  if (msg === '7') { state.step = 'atendente_humano'; state.humanoAssumiuAt = Date.now(); if (state.silentHumano) { state.silentHumano = false; return null; } return SCRIPTS.atendente; }
 
   return null;
 }
@@ -688,12 +688,14 @@ async function getBotReply(userMsg, state) {
   if (has(msg, 'cancelar', 'cancelamento', 'desmarcar', 'desistir', 'nao quero mais', 'quero cancelar')) {
     state.step = 'atendente_humano';
     state.humanoAssumiuAt = Date.now();
+    if (state.silentHumano) { state.silentHumano = false; return null; }
     return `Entendido! 😊 Vou te conectar com um de nossos atendentes para te ajudar com o cancelamento.\nUm momento! 👋`;
   }
 
   if (has(msg, 'atendente', 'humano', 'pessoa real', 'falar com alguem', 'atendimento humano')) {
     state.step = 'atendente_humano';
     state.humanoAssumiuAt = Date.now();
+    if (state.silentHumano) { state.silentHumano = false; return null; }
     return SCRIPTS.atendente;
   }
 
@@ -733,6 +735,7 @@ async function getBotReply(userMsg, state) {
   // Bot não sabe responder — silencioso, encaminha para humano
   state.step = 'atendente_humano';
   state.humanoAssumiuAt = Date.now();
+  state.silentHumano = false;
   return null;
 }
 
@@ -927,6 +930,45 @@ app.post('/webhook', async (req, res) => {
   // Mensagem do dono — relay para cliente em atendimento humano (ignorado em modo cliente)
   const _stateDonoParaCheck = userStates[DONO_PHONE];
   if (phone === DONO_PHONE && text && text.trim() !== '191088' && !_stateDonoParaCheck?.modoCliente) {
+
+    // Comando: "bot NUMERO" — reativa bot para um cliente específico (silenciosamente)
+    const matchBot = text.trim().match(/^bot\s+(\d{10,15})$/i);
+    if (matchBot) {
+      const alvoRaw = matchBot[1].replace(/\D/g, '');
+      const alvoPhone = alvoRaw.match(/^55/) ? alvoRaw : `55${alvoRaw}`;
+      const alvoKey = userStates[alvoPhone]
+        ? alvoPhone
+        : Object.keys(userStates).find(k => k.endsWith(alvoRaw.slice(-10)));
+      if (alvoKey && userStates[alvoKey]) {
+        userStates[alvoKey].step = 'menu';
+        userStates[alvoKey].humanoAssumiuAt = null;
+        userStates[alvoKey].silentHumano = true;
+        await notificarDono(`🤖 Bot reativado para ${alvoKey}. Próxima transferência será silenciosa.`);
+      } else {
+        await notificarDono(`⚠️ Cliente ${alvoPhone} não encontrado em atendimento.`);
+      }
+      return;
+    }
+
+    // Comando: "reserva NUMERO | Nome, data, pessoas" — salva reserva manual no Supabase
+    const matchReserva = text.trim().match(/^reserva\s+(\d{10,15})\s*[|\/]\s*(.+)$/is);
+    if (matchReserva) {
+      const clientePhone = matchReserva[1].replace(/\D/g, '').replace(/^(?!55)(\d{10,11})$/, '55$1');
+      const dadosTexto = matchReserva[2];
+      const nome = extrairNome(dadosTexto);
+      const dataStr = extrairData(dadosTexto);
+      const dataISO = converterDataParaISO(dataStr);
+      const pessoasStr = extrairPessoas(dadosTexto);
+      const pessoas = pessoasStr ? parseInt(pessoasStr) : null;
+      if (nome && dataISO && pessoas) {
+        await salvarReservaSupabase(nome, clientePhone, dataISO, pessoas);
+        await notificarDono(`✅ Reserva salva: ${nome}, ${pessoas} pessoas, ${dataISO}`);
+      } else {
+        await notificarDono(`⚠️ Não consegui extrair todos os dados.\nEncontrei: nome=${nome || '?'}, data=${dataISO || '?'}, pessoas=${pessoas || '?'}\nFormato: reserva NUMERO | Nome, 10/04, 4 pessoas`);
+      }
+      return;
+    }
+
     // Formato explícito: "numero | mensagem" ou "numero/ mensagem"
     const match = text.match(/^(\d{10,15})\s*[|\/]\s*(.+)$/s);
     if (match) {
