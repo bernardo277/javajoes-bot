@@ -545,7 +545,7 @@ async function getBotReply(userMsg, state) {
       const sugestao = tentarRespostaBot(userMsg);
       if (sugestao) {
         pendingBotReplies[state.phone] = sugestao;
-        await notificarDono(`💬 *${state.phone}*:\n"${userMsg}"\n\n🤖 Sei responder isso:\n${sugestao}\n\nResponda:\n✅ *ok* — envio\n❌ *nao* — não envio\n*${state.phone} | mensagem* — resposta manual`);
+        await notificarDono(`💬 *${state.phone}*:\n"${userMsg}"\n\n🤖 Sei responder isso:\n${sugestao}\n\n✅ Mande *ok* para eu enviar, ou ignore para responder manualmente.`);
       } else {
         await notificarDono(`💬 *${state.phone}*:\n"${userMsg}"\n\nResponda: *${state.phone} | sua mensagem*`);
       }
