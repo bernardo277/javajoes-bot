@@ -934,6 +934,8 @@ app.post('/webhook', async (req, res) => {
     const phoneRaw = body?.phone || body?.message?.phone || '';
     // Normaliza: garante prefixo 55 para números brasileiros
     const phoneAlvo = phoneRaw.replace(/\D/g, '').replace(/^0/, '').replace(/^(?!55)(\d{10,11})$/, '55$1');
+    // Nunca marcar o próprio dono como humano_ativo (evita loop de notificação)
+    if (phoneAlvo === DONO_PHONE || phoneAlvo.endsWith(DONO_PHONE.slice(-10))) return;
     // Tenta encontrar o estado pelo número exato ou sem prefixo 55
     const stateKey = userStates[phoneAlvo] ? phoneAlvo
       : Object.keys(userStates).find(k => k.endsWith(phoneRaw.replace(/\D/g, '').slice(-10)));
@@ -1003,7 +1005,8 @@ app.post('/webhook', async (req, res) => {
         await notificarDono(`⚠️ Há ${pendentes.length} respostas pendentes. Use:\n*ok NUMERO* para confirmar qual`);
         return;
       }
-      // nenhuma pendente — cai no relay normal
+      // nenhuma pendente — ignora ok
+      return;
     }
 
     // Comando: "ok NUMERO" — aprova sugestão para cliente específico
@@ -1082,6 +1085,10 @@ app.post('/webhook', async (req, res) => {
   }
 
   if (!phone || !text) return;
+
+  // Safety net: nunca processar o número do dono como cliente
+  const phoneNorm = phone.replace(/\D/g, '');
+  if (phoneNorm === DONO_PHONE || phoneNorm.endsWith(DONO_PHONE.slice(-10))) return;
 
   console.log(`[${new Date().toLocaleTimeString()}] 📩 ${phone}: ${text}`);
 
