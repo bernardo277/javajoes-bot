@@ -15,9 +15,9 @@ if (fs.existsSync(envPath)) {
   });
 }
 
-const INSTANCE_ID = process.env.ZAPI_INSTANCE_ID;
-const TOKEN = process.env.ZAPI_TOKEN;
-const CLIENT_TOKEN = process.env.ZAPI_CLIENT_TOKEN;
+const INSTANCE_ID = (process.env.ZAPI_INSTANCE_ID || '').trim();
+const TOKEN = (process.env.ZAPI_TOKEN || '').trim();
+const CLIENT_TOKEN = (process.env.ZAPI_CLIENT_TOKEN || '').trim();
 const PORT = process.env.PORT || 3000;
 const ZAPI_URL = `https://api.z-api.io/instances/${INSTANCE_ID}/token/${TOKEN}`;
 
