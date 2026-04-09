@@ -1173,6 +1173,15 @@ app.get('/', (_req, res) => {
   res.send('🍕 Java Joe\'s Bot — Servidor rodando!');
 });
 
+app.get('/diagnostico', (_req, res) => {
+  res.json({
+    instance: INSTANCE_ID || 'VAZIO',
+    token: TOKEN ? TOKEN.slice(0, 6) + '...' : 'VAZIO',
+    clientToken: CLIENT_TOKEN ? CLIENT_TOKEN.slice(0, 6) + '...' : 'VAZIO',
+    zapiUrl: ZAPI_URL,
+  });
+});
+
 // ─── INICIAR ──────────────────────────────────────────────────────────────────
 
 app.listen(PORT, () => {
