@@ -1173,42 +1173,6 @@ app.get('/', (_req, res) => {
   res.send('🍕 Java Joe\'s Bot — Servidor rodando!');
 });
 
-app.get('/test-envio', async (_req, res) => {
-  const testPhone = '5521988887777';
-  try {
-    const url = `${ZAPI_URL}/send-text`;
-    const resp = await axios.post(url, { phone: testPhone, message: 'Teste direto do servidor' }, { headers: { 'Client-Token': CLIENT_TOKEN } });
-    res.json({ ok: true, zapiResponse: resp.data, url });
-  } catch (err) {
-    res.json({ ok: false, status: err.response?.status, error: err.response?.data || err.message, url: `${ZAPI_URL}/send-text` });
-  }
-});
-
-app.get('/test-bot', async (_req, res) => {
-  const testPhone = '5521988887777';
-  delete userStates[testPhone];
-  const state = getState(testPhone);
-  try {
-    const reply = await getBotReply('Oi', state);
-    if (reply) {
-      await enviarMensagem(testPhone, reply);
-      res.json({ ok: true, reply: reply.slice(0, 100) + '...', ultimaResposta: ultimasRespostas[testPhone] ? 'SET' : 'NULL' });
-    } else {
-      res.json({ ok: false, reply: null, step: state.step });
-    }
-  } catch (err) {
-    res.json({ ok: false, error: err.message, stack: err.stack?.split('\n').slice(0, 3) });
-  }
-});
-
-app.get('/diagnostico', (_req, res) => {
-  res.json({
-    instance: INSTANCE_ID || 'VAZIO',
-    token: TOKEN ? TOKEN.slice(0, 6) + '...' : 'VAZIO',
-    clientToken: CLIENT_TOKEN ? CLIENT_TOKEN.slice(0, 6) + '...' : 'VAZIO',
-    zapiUrl: ZAPI_URL,
-  });
-});
 
 // ─── INICIAR ──────────────────────────────────────────────────────────────────
 
