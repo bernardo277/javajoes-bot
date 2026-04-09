@@ -7,8 +7,11 @@ const path = require('path');
 const envPath = path.join(__dirname, '.env');
 if (fs.existsSync(envPath)) {
   fs.readFileSync(envPath, 'utf8').split('\n').forEach(line => {
-    const [key, val] = line.split('=');
-    if (key && val) process.env[key.trim()] = val.trim();
+    const idx = line.indexOf('=');
+    if (idx === -1) return;
+    const key = line.slice(0, idx).trim();
+    const val = line.slice(idx + 1).trim();
+    if (key && val) process.env[key] = val;
   });
 }
 
@@ -762,8 +765,10 @@ async function getBotReply(userMsg, state) {
 // ─── ENVIAR MENSAGEM VIA Z-API ─────────────────────────────────────────────────
 
 async function enviarMensagem(phone, message) {
+  const url = `${ZAPI_URL}/send-text`;
   try {
-    await axios.post(`${ZAPI_URL}/send-text`, {
+    console.log(`[${new Date().toLocaleTimeString()}] 📤 Enviando para ${phone}...`);
+    await axios.post(url, {
       phone,
       message
     }, {
@@ -772,7 +777,8 @@ async function enviarMensagem(phone, message) {
     ultimasRespostas[phone] = message;
     console.log(`[${new Date().toLocaleTimeString()}] ✅ Enviado para ${phone}`);
   } catch (err) {
-    console.error(`[${new Date().toLocaleTimeString()}] ❌ Erro ao enviar para ${phone}:`, err.response?.data || err.message);
+    console.error(`[${new Date().toLocaleTimeString()}] ❌ Erro ao enviar para ${phone}:`, err.response?.status, err.response?.data || err.message);
+    console.error(`   URL: ${url}`);
   }
 }
 
@@ -921,6 +927,9 @@ setInterval(() => {
 }, 60 * 1000);
 
 // ─── WEBHOOK ──────────────────────────────────────────────────────────────────
+
+// Z-API manda GET pra testar se o webhook está ativo — precisa responder 200
+app.get('/webhook', (_req, res) => res.sendStatus(200));
 
 app.post('/webhook', async (req, res) => {
   res.sendStatus(200);
@@ -1169,6 +1178,9 @@ app.get('/', (_req, res) => {
 app.listen(PORT, () => {
   console.log(`\n🍕 Java Joe's Bot iniciado!`);
   console.log(`📡 Porta: ${PORT}`);
-  console.log(`🔗 Instance: ${INSTANCE_ID}`);
+  console.log(`🔗 Instance: ${INSTANCE_ID || '⚠️ VAZIO!'}`);
+  console.log(`🔑 Token: ${TOKEN ? TOKEN.slice(0, 6) + '...' : '⚠️ VAZIO!'}`);
+  console.log(`🔐 Client-Token: ${CLIENT_TOKEN ? CLIENT_TOKEN.slice(0, 6) + '...' : '⚠️ VAZIO!'}`);
+  console.log(`🌐 Z-API URL: ${ZAPI_URL}`);
   console.log(`\nAguardando mensagens...\n`);
 });
