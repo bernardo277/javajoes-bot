@@ -1095,9 +1095,10 @@ app.post('/webhook', async (req, res) => {
 
   if (!phone || !text) return;
 
-  // Safety net: nunca processar o número do dono como cliente
+  // Safety net: só processa dono como cliente se estiver em modoCliente (191088)
   const phoneNorm = phone.replace(/\D/g, '');
-  if (phoneNorm === DONO_PHONE || phoneNorm.endsWith(DONO_PHONE.slice(-10))) return;
+  const _donoState = userStates[DONO_PHONE];
+  if ((phoneNorm === DONO_PHONE || phoneNorm.endsWith(DONO_PHONE.slice(-10))) && !_donoState?.modoCliente) return;
 
   console.log(`[${new Date().toLocaleTimeString()}] 📩 ${phone}: ${text}`);
 
