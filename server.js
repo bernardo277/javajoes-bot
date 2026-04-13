@@ -764,21 +764,19 @@ async function getBotReply(userMsg, state) {
 
 // ─── ENVIAR MENSAGEM VIA Z-API ─────────────────────────────────────────────────
 
-async function enviarMensagem(phone, message) {
+async function enviarMensagem(phone, message, notificarErro = false) {
   const url = `${ZAPI_URL}/send-text`;
   try {
     console.log(`[${new Date().toLocaleTimeString()}] 📤 Enviando para ${phone}...`);
-    await axios.post(url, {
-      phone,
-      message
-    }, {
-      headers: { 'Client-Token': CLIENT_TOKEN }
-    });
+    await axios.post(url, { phone, message }, { headers: { 'Client-Token': CLIENT_TOKEN } });
     ultimasRespostas[phone] = message;
     console.log(`[${new Date().toLocaleTimeString()}] ✅ Enviado para ${phone}`);
   } catch (err) {
-    console.error(`[${new Date().toLocaleTimeString()}] ❌ Erro ao enviar para ${phone}:`, err.response?.status, err.response?.data || err.message);
-    console.error(`   URL: ${url}`);
+    const errMsg = err.response?.data ? JSON.stringify(err.response.data) : err.message;
+    console.error(`[${new Date().toLocaleTimeString()}] ❌ Erro ao enviar para ${phone}:`, err.response?.status, errMsg);
+    if (notificarErro) {
+      await notificarDono(`❌ Falha ao enviar para *${phone}*:\n${errMsg}`).catch(() => {});
+    }
   }
 }
 
@@ -952,13 +950,14 @@ app.post('/webhook', async (req, res) => {
     // isso acontece quando o Z-API está conectado no celular do dono
     const textFromMe = _textRaw?.trim() || '';
     const isComandoDono = /^(\d{10,15})\s*[|\/]/.test(textFromMe) ||
-      /^(ok|nao|não|bot|reserva|status)\b/i.test(textFromMe) ||
+      /^(ok|nao|não|bot|reserva|status|ping)\b/i.test(textFromMe) ||
       textFromMe === '191088';
 
     if (isComandoDono) {
-      // Processar como comando do dono mesmo sendo fromMe
-      console.log(`[${new Date().toLocaleTimeString()}] 🔑 fromMe com comando de dono detectado — processando relay`);
-      // Não retorna aqui — deixa cair no bloco de dono abaixo
+      // Processar como comando do dono — força phone para DONO_PHONE
+      // (no fromMe, _phoneRaw é o destinatário, não o remetente)
+      console.log(`[${new Date().toLocaleTimeString()}] 🔑 fromMe com comando de dono — forçando phone para DONO_PHONE`);
+      // Processa abaixo com phone sobrescrito para DONO_PHONE
     } else {
       // Mensagem normal do bot enviada para cliente — só atualiza estado
       if (phoneAlvo === DONO_PHONE || phoneAlvo.endsWith(DONO_PHONE.slice(-10))) return;
@@ -973,7 +972,8 @@ app.post('/webhook', async (req, res) => {
     }
   }
 
-  const phone = _phoneRaw || body?.phone || body?.message?.phone;
+  // Quando fromMe+comando: usa DONO_PHONE como remetente; caso contrário usa o phone real
+  const phone = (_fromMe && _textRaw) ? DONO_PHONE : (_phoneRaw || body?.phone || body?.message?.phone);
   const text = _textRaw || body?.message?.text?.message || body?.text?.message || body?.text;
 
   // Mensagem do dono — relay para cliente em atendimento humano (ignorado em modo cliente)
@@ -1080,6 +1080,27 @@ app.post('/webhook', async (req, res) => {
       return;
     }
 
+    // Comando: "ping" — diagnóstico de estado
+    if (text.trim().toLowerCase() === 'ping') {
+      const ativos = Object.entries(userStates)
+        .filter(([p, s]) => p !== DONO_PHONE && (s.step === 'atendente_humano' || s.step === 'humano_ativo'))
+        .map(([p, s]) => `• ${p} (${s.step})`);
+      const todosModos = Object.entries(userStates)
+        .filter(([p]) => p !== DONO_PHONE)
+        .map(([p, s]) => `• ${p}: ${s.step}`);
+      await notificarDono(
+        `🏓 *PING — diagnóstico*\n` +
+        `fromMe no webhook: ${_fromMe}\n` +
+        `Phone recebido: ${_phoneRaw}\n` +
+        `Phone normalizado: ${phoneEntrada}\n` +
+        `Clientes em atendimento humano: ${ativos.length}\n` +
+        (ativos.length ? ativos.join('\n') : '(nenhum)') +
+        `\n\nTodos os estados:\n` +
+        (todosModos.length ? todosModos.join('\n') : '(vazio)')
+      );
+      return;
+    }
+
     // Formato explícito: "numero | mensagem" ou "numero/ mensagem"
     const match = text.match(/^(\d{10,15})\s*[|\/]\s*(.+)$/s);
     if (match) {
@@ -1087,7 +1108,7 @@ app.post('/webhook', async (req, res) => {
       const clientePhone = clientePhoneRaw.replace(/^(?!55)(\d{10,11})$/, '55$1');
       const resposta = match[2].trim();
       console.log(`[${new Date().toLocaleTimeString()}] 📨 Relay dono→cliente: ${clientePhone} | "${resposta.slice(0,40)}"`);
-      await enviarMensagem(clientePhone, resposta);
+      await enviarMensagem(clientePhone, resposta, true);
       await notificarDono(`✅ Mensagem enviada para *${clientePhone}*:\n"${resposta.slice(0, 100)}"`);
       if (!userStates[clientePhone]) userStates[clientePhone] = getState(clientePhone);
       userStates[clientePhone].step = 'humano_ativo';
