@@ -960,8 +960,10 @@ app.post('/webhook', async (req, res) => {
   const text = body?.message?.text?.message || body?.text?.message || body?.text;
 
   // Mensagem do dono — relay para cliente em atendimento humano (ignorado em modo cliente)
+  // Normaliza o phone recebido para garantir prefixo 55 antes de comparar
+  const phoneEntrada = phone ? phone.replace(/\D/g, '').replace(/^0/, '').replace(/^(?!55)(\d{10,11})$/, '55$1') : '';
   const _stateDonoParaCheck = userStates[DONO_PHONE];
-  if (phone === DONO_PHONE && text && text.trim() !== '191088' && !_stateDonoParaCheck?.modoCliente) {
+  if (phoneEntrada === DONO_PHONE && text && text.trim() !== '191088' && !_stateDonoParaCheck?.modoCliente) {
 
     // Comando: "bot NUMERO" — reativa bot para um cliente específico (silenciosamente)
     const matchBot = text.trim().match(/^bot\s+(\d{10,15})$/i);
@@ -1089,7 +1091,8 @@ app.post('/webhook', async (req, res) => {
       await notificarDono(`⚠️ Há ${clientesAtivos.length} clientes em atendimento. Use o formato:\n*numero | mensagem*\n\nClientes:\n${clientesAtivos.map(([p]) => p).join('\n')}`);
       return;
     }
-    // Nenhum cliente em atendimento — ignorar
+    // Nenhum cliente em atendimento — avisa dono (evita mensagem perdida silenciosamente)
+    await notificarDono(`⚠️ Sua mensagem não foi enviada — nenhum cliente em atendimento ativo no momento.\n\nPara enviar diretamente, use o formato:\n*numerocliente | sua mensagem*\n\nEx: *5521XXXXXXXXX | Olá, tudo bem?*`);
     return;
   }
 
