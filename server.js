@@ -938,26 +938,43 @@ app.post('/webhook', async (req, res) => {
 
   if (body?.isStatusReply) return;
 
+  // Log diagnóstico de todo webhook recebido
+  const _fromMe = body?.fromMe || body?.message?.fromMe;
+  const _phoneRaw = body?.phone || body?.message?.phone || '';
+  const _textRaw = body?.message?.text?.message || body?.text?.message || body?.text || '';
+  console.log(`[${new Date().toLocaleTimeString()}] 📥 webhook | fromMe=${_fromMe} | phone=${_phoneRaw} | text="${_textRaw?.slice(0,60)}"`);
+
   // Detectar quando humano assume a conversa (mensagem enviada pelo dono)
-  if (body?.fromMe || body?.message?.fromMe) {
-    const phoneRaw = body?.phone || body?.message?.phone || '';
-    // Normaliza: garante prefixo 55 para números brasileiros
-    const phoneAlvo = phoneRaw.replace(/\D/g, '').replace(/^0/, '').replace(/^(?!55)(\d{10,11})$/, '55$1');
-    // Nunca marcar o próprio dono como humano_ativo (evita loop de notificação)
-    if (phoneAlvo === DONO_PHONE || phoneAlvo.endsWith(DONO_PHONE.slice(-10))) return;
-    // Tenta encontrar o estado pelo número exato ou sem prefixo 55
-    const stateKey = userStates[phoneAlvo] ? phoneAlvo
-      : Object.keys(userStates).find(k => k.endsWith(phoneRaw.replace(/\D/g, '').slice(-10)));
-    if (stateKey && userStates[stateKey]) {
-      userStates[stateKey].step = 'humano_ativo';
-      userStates[stateKey].humanoAssumiuAt = Date.now();
-      console.log(`[${new Date().toLocaleTimeString()}] 👤 Humano assumiu conversa com ${stateKey}`);
+  if (_fromMe) {
+    const phoneAlvo = _phoneRaw.replace(/\D/g, '').replace(/^0/, '').replace(/^(?!55)(\d{10,11})$/, '55$1');
+
+    // Se é fromMe mas a mensagem é um comando do dono (ex: "55219... | resposta")
+    // isso acontece quando o Z-API está conectado no celular do dono
+    const textFromMe = _textRaw?.trim() || '';
+    const isComandoDono = /^(\d{10,15})\s*[|\/]/.test(textFromMe) ||
+      /^(ok|nao|não|bot|reserva|status)\b/i.test(textFromMe) ||
+      textFromMe === '191088';
+
+    if (isComandoDono) {
+      // Processar como comando do dono mesmo sendo fromMe
+      console.log(`[${new Date().toLocaleTimeString()}] 🔑 fromMe com comando de dono detectado — processando relay`);
+      // Não retorna aqui — deixa cair no bloco de dono abaixo
+    } else {
+      // Mensagem normal do bot enviada para cliente — só atualiza estado
+      if (phoneAlvo === DONO_PHONE || phoneAlvo.endsWith(DONO_PHONE.slice(-10))) return;
+      const stateKey = userStates[phoneAlvo] ? phoneAlvo
+        : Object.keys(userStates).find(k => k.endsWith(_phoneRaw.replace(/\D/g, '').slice(-10)));
+      if (stateKey && userStates[stateKey]) {
+        userStates[stateKey].step = 'humano_ativo';
+        userStates[stateKey].humanoAssumiuAt = Date.now();
+        console.log(`[${new Date().toLocaleTimeString()}] 👤 Humano assumiu conversa com ${stateKey}`);
+      }
+      return;
     }
-    return;
   }
 
-  const phone = body?.phone || body?.message?.phone;
-  const text = body?.message?.text?.message || body?.text?.message || body?.text;
+  const phone = _phoneRaw || body?.phone || body?.message?.phone;
+  const text = _textRaw || body?.message?.text?.message || body?.text?.message || body?.text;
 
   // Mensagem do dono — relay para cliente em atendimento humano (ignorado em modo cliente)
   // Normaliza o phone recebido para garantir prefixo 55 antes de comparar
@@ -1066,13 +1083,15 @@ app.post('/webhook', async (req, res) => {
     // Formato explícito: "numero | mensagem" ou "numero/ mensagem"
     const match = text.match(/^(\d{10,15})\s*[|\/]\s*(.+)$/s);
     if (match) {
-      const clientePhone = match[1].trim();
+      const clientePhoneRaw = match[1].trim();
+      const clientePhone = clientePhoneRaw.replace(/^(?!55)(\d{10,11})$/, '55$1');
       const resposta = match[2].trim();
+      console.log(`[${new Date().toLocaleTimeString()}] 📨 Relay dono→cliente: ${clientePhone} | "${resposta.slice(0,40)}"`);
       await enviarMensagem(clientePhone, resposta);
-      if (userStates[clientePhone]) {
-        userStates[clientePhone].step = 'humano_ativo';
-        userStates[clientePhone].humanoAssumiuAt = Date.now();
-      }
+      await notificarDono(`✅ Mensagem enviada para *${clientePhone}*:\n"${resposta.slice(0, 100)}"`);
+      if (!userStates[clientePhone]) userStates[clientePhone] = getState(clientePhone);
+      userStates[clientePhone].step = 'humano_ativo';
+      userStates[clientePhone].humanoAssumiuAt = Date.now();
       return;
     }
     // Sem número: encaminha para o único cliente em atendimento humano
