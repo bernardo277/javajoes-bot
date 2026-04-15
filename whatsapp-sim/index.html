@@ -1,0 +1,965 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Java Joe's — Bot de Atendimento WhatsApp</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #050d10;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      gap: 28px;
+      padding: 40px 20px;
+      overflow-x: hidden;
+    }
+
+    /* ── Fundo com grade sutil ───────────────────────────────────────────── */
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image:
+        linear-gradient(rgba(0,168,132,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,168,132,0.04) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+    }
+
+    /* ── Glow de fundo ───────────────────────────────────────────────────── */
+    body::after {
+      content: '';
+      position: fixed;
+      width: 600px; height: 600px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(0,168,132,0.12) 0%, transparent 70%);
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+    }
+
+    /* ── Header da página ────────────────────────────────────────────────── */
+    .page-header {
+      display: flex; flex-direction: column; align-items: center; gap: 6px;
+      position: relative; z-index: 10;
+    }
+
+    .page-brand {
+      display: flex; align-items: center; gap: 10px;
+    }
+
+    .brand-icon {
+      width: 36px; height: 36px; border-radius: 10px;
+      background: linear-gradient(135deg, #25d366, #128c7e);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+      box-shadow: 0 4px 16px rgba(37,211,102,0.35);
+    }
+
+    .brand-name {
+      font-size: 22px; font-weight: 700;
+      background: linear-gradient(90deg, #e9edef, #8696a0);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      letter-spacing: -0.3px;
+    }
+
+    .page-sub {
+      font-size: 13px; color: #4a5568; letter-spacing: 0.5px;
+      text-transform: uppercase; font-weight: 500;
+    }
+
+    /* ── Moldura externa do celular ──────────────────────────────────────── */
+    .phone-frame {
+      position: relative; z-index: 10;
+      width: 390px;
+      background: linear-gradient(145deg, #1e2d35, #111b21);
+      border-radius: 54px;
+      padding: 14px;
+      box-shadow:
+        0 0 0 1px rgba(255,255,255,0.08),
+        0 40px 100px rgba(0,0,0,0.7),
+        0 0 60px rgba(0,168,132,0.15),
+        inset 0 1px 0 rgba(255,255,255,0.05);
+    }
+
+    /* Botões laterais simulados */
+    .phone-frame::before {
+      content: '';
+      position: absolute;
+      left: -3px; top: 140px;
+      width: 3px; height: 60px;
+      background: #1e2d35;
+      border-radius: 2px 0 0 2px;
+      box-shadow: 0 70px 0 #1e2d35, 0 -70px 0 #1e2d35;
+    }
+    .phone-frame::after {
+      content: '';
+      position: absolute;
+      right: -3px; top: 170px;
+      width: 3px; height: 80px;
+      background: #1e2d35;
+      border-radius: 0 2px 2px 0;
+    }
+
+    .phone {
+      width: 100%;
+      height: 780px;
+      background: #0b141a;
+      border-radius: 42px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    /* ── Barra de status do iOS ──────────────────────────────────────────── */
+    .status-bar {
+      background: #202c33;
+      padding: 14px 24px 6px;
+      display: flex; align-items: center; justify-content: space-between;
+      flex-shrink: 0;
+    }
+
+    .status-time {
+      font-size: 15px; font-weight: 600; color: #e9edef; letter-spacing: -0.2px;
+    }
+
+    .status-icons {
+      display: flex; align-items: center; gap: 6px;
+    }
+
+    .signal-bars { display: flex; align-items: flex-end; gap: 2px; }
+    .signal-bars span {
+      background: #e9edef; border-radius: 1px; width: 3px;
+    }
+    .signal-bars span:nth-child(1) { height: 4px; }
+    .signal-bars span:nth-child(2) { height: 7px; }
+    .signal-bars span:nth-child(3) { height: 10px; }
+    .signal-bars span:nth-child(4) { height: 13px; }
+
+    .wifi-icon { color: #e9edef; font-size: 12px; }
+
+    .battery {
+      display: flex; align-items: center; gap: 2px;
+    }
+    .battery-body {
+      width: 24px; height: 12px; border: 1.5px solid #e9edef;
+      border-radius: 3px; display: flex; align-items: center; padding: 2px;
+      position: relative;
+    }
+    .battery-body::after {
+      content: '';
+      position: absolute; right: -5px; top: 50%;
+      transform: translateY(-50%);
+      width: 3px; height: 6px;
+      background: #e9edef; border-radius: 0 2px 2px 0;
+    }
+    .battery-fill {
+      width: 75%; height: 100%; background: #e9edef; border-radius: 1px;
+    }
+
+    /* Ilha dinâmica */
+    .dynamic-island {
+      position: absolute; top: 8px; left: 50%; transform: translateX(-50%);
+      width: 120px; height: 34px;
+      background: #000; border-radius: 20px;
+      z-index: 10;
+    }
+
+    /* ── Header do WhatsApp ──────────────────────────────────────────────── */
+    .header {
+      background: #202c33;
+      padding: 8px 16px 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+
+    .back-btn { color: #00a884; font-size: 24px; font-weight: 300; line-height: 1; }
+
+    .avatar-wrap { position: relative; }
+
+    .avatar {
+      width: 42px; height: 42px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #25d366, #128c7e);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px; flex-shrink: 0;
+      box-shadow: 0 2px 8px rgba(37,211,102,0.3);
+    }
+
+    .online-dot {
+      position: absolute; bottom: 1px; right: 1px;
+      width: 10px; height: 10px; border-radius: 50%;
+      background: #25d366;
+      border: 2px solid #202c33;
+    }
+
+    .contact-info { flex: 1; }
+    .contact-name { color: #e9edef; font-size: 16px; font-weight: 600; letter-spacing: -0.2px; }
+    .contact-status { color: #25d366; font-size: 12px; font-weight: 500; }
+
+    .header-icons { color: #8696a0; display: flex; gap: 22px; align-items: center; }
+    .header-icons svg { width: 22px; height: 22px; fill: #8696a0; }
+
+    /* ── Área de chat ────────────────────────────────────────────────────── */
+    .chat-bg {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      /* Padrão de fundo sutil */
+      background-color: #0b141a;
+      background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%2325d366' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    }
+
+    .chat-bg::-webkit-scrollbar { width: 3px; }
+    .chat-bg::-webkit-scrollbar-thumb { background: #2a3942; border-radius: 2px; }
+
+    .date-divider { text-align: center; margin: 8px 0; }
+    .date-divider span {
+      background: rgba(11,20,26,0.85);
+      backdrop-filter: blur(4px);
+      color: #8696a0;
+      font-size: 12px; padding: 5px 12px; border-radius: 8px;
+      border: 1px solid rgba(42,57,66,0.5);
+    }
+
+    .msg-row { display: flex; margin-bottom: 1px; }
+    .msg-row.sent { justify-content: flex-end; }
+    .msg-row.received { justify-content: flex-start; }
+
+    .bubble {
+      max-width: 80%;
+      padding: 7px 12px 5px;
+      border-radius: 10px;
+      font-size: 14px;
+      line-height: 1.5;
+      position: relative;
+      word-wrap: break-word;
+      white-space: pre-wrap;
+    }
+
+    .msg-row.sent .bubble {
+      background: linear-gradient(135deg, #005c4b, #00694f);
+      color: #e9edef;
+      border-bottom-right-radius: 2px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+    }
+
+    .msg-row.received .bubble {
+      background: #202c33;
+      color: #e9edef;
+      border-bottom-left-radius: 2px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+    }
+
+    .bubble .time {
+      font-size: 10.5px; color: rgba(134,150,160,0.85);
+      float: right; margin-left: 8px; margin-top: 3px;
+    }
+
+    .msg-row.sent .bubble .time::after { content: ' ✓✓'; color: #53bdeb; }
+
+    .typing-row { display: flex; margin-bottom: 4px; }
+    .typing-bubble {
+      background: #202c33; border-radius: 10px; border-bottom-left-radius: 2px;
+      padding: 13px 16px; display: flex; gap: 5px; align-items: center;
+    }
+    .typing-dot {
+      width: 6px; height: 6px; background: #8696a0;
+      border-radius: 50%; animation: typing 1.2s infinite;
+    }
+    .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes typing {
+      0%, 80%, 100% { transform: scale(0.75); opacity: 0.4; }
+      40% { transform: scale(1.1); opacity: 1; }
+    }
+
+    /* ── Input area ──────────────────────────────────────────────────────── */
+    .input-area {
+      background: #202c33; padding: 8px 10px 12px;
+      display: flex; align-items: flex-end; gap: 8px; flex-shrink: 0;
+    }
+
+    .input-wrapper {
+      flex: 1; background: #2a3942; border-radius: 26px;
+      display: flex; align-items: flex-end; padding: 8px 14px; gap: 8px;
+    }
+
+    .emoji-btn { color: #8696a0; font-size: 22px; padding-bottom: 1px; flex-shrink: 0; cursor: pointer; }
+
+    #msg-input {
+      flex: 1; background: transparent; border: none; outline: none;
+      color: #e9edef; font-size: 15px; resize: none; max-height: 100px;
+      line-height: 1.4; font-family: inherit;
+    }
+
+    #msg-input::placeholder { color: #8696a0; }
+
+    .attach-btn { color: #8696a0; font-size: 20px; flex-shrink: 0; padding-bottom: 2px; cursor: pointer; }
+
+    .send-btn {
+      width: 48px; height: 48px; border-radius: 50%;
+      background: linear-gradient(135deg, #00a884, #008a6e);
+      border: none; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; transition: all 0.2s;
+      box-shadow: 0 4px 14px rgba(0,168,132,0.4);
+    }
+    .send-btn:hover {
+      background: linear-gradient(135deg, #02be97, #00a884);
+      box-shadow: 0 4px 20px rgba(0,168,132,0.6);
+      transform: scale(1.05);
+    }
+    .send-btn svg { fill: white; width: 22px; height: 22px; }
+
+    /* ── Footer da página ────────────────────────────────────────────────── */
+    .page-footer {
+      display: flex; flex-direction: column; align-items: center; gap: 8px;
+      position: relative; z-index: 10;
+    }
+
+    .reset-btn {
+      background: rgba(42,57,66,0.6);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(42,57,66,0.9);
+      color: #8696a0; font-size: 13px; padding: 8px 20px;
+      border-radius: 20px; cursor: pointer;
+      transition: all 0.2s; font-family: inherit; font-weight: 500;
+    }
+    .reset-btn:hover {
+      color: #e9edef; border-color: #00a884;
+      box-shadow: 0 0 12px rgba(0,168,132,0.2);
+    }
+
+    .footer-tag {
+      font-size: 11.5px; color: #2d4450; letter-spacing: 0.3px;
+      font-weight: 500;
+    }
+  </style>
+</head>
+<body>
+
+<div class="page-header">
+  <div class="page-brand">
+    <div class="brand-icon">🍕</div>
+    <div class="brand-name">Java Joe's Pizzaria e Bistrô</div>
+  </div>
+  <div class="page-sub">Bot de Atendimento · WhatsApp</div>
+</div>
+
+<div class="phone-frame">
+  <div class="phone">
+    <div class="dynamic-island"></div>
+
+    <div class="status-bar">
+      <div class="status-time" id="clock">9:41</div>
+      <div class="status-icons">
+        <div class="signal-bars">
+          <span></span><span></span><span></span><span></span>
+        </div>
+        <span class="wifi-icon">▲</span>
+        <div class="battery">
+          <div class="battery-body"><div class="battery-fill"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="header">
+      <span class="back-btn">‹</span>
+      <div class="avatar-wrap">
+        <div class="avatar">🍕</div>
+        <div class="online-dot"></div>
+      </div>
+      <div class="contact-info">
+        <div class="contact-name">Java Joe's</div>
+        <div class="contact-status" id="status-text">online</div>
+      </div>
+      <div class="header-icons">
+        <svg viewBox="0 0 24 24"><path d="M15.9 14.3H15l-.3-.3c1-1.1 1.6-2.7 1.6-4.3 0-3.7-3-6.7-6.7-6.7S3 6 3 9.7s3 6.7 6.7 6.7c1.6 0 3.1-.6 4.3-1.6l.3.3v.8l5.1 5.1 1.5-1.5-5-5.2zm-6.2 0C7.1 14.3 4 11.2 4 7.4S7.1.5 10.8.5s6.8 3.1 6.8 6.9-3.1 6.9-6.9 6.9z" transform="translate(0 2)"/></svg>
+        <svg viewBox="0 0 24 24"><path d="M12 7a2 2 0 1 0 .001 4.001A2 2 0 0 0 12 7zm0 10a2 2 0 1 0 .001 4.001A2 2 0 0 0 12 17zm0-5a2 2 0 1 0 .001 4.001A2 2 0 0 0 12 12z"/></svg>
+      </div>
+    </div>
+
+    <div class="chat-bg" id="chat">
+      <div class="date-divider"><span>Hoje</span></div>
+    </div>
+
+    <div class="input-area">
+      <div class="input-wrapper">
+        <span class="emoji-btn">😊</span>
+        <textarea id="msg-input" placeholder="Mensagem" rows="1"></textarea>
+        <span class="attach-btn">📎</span>
+      </div>
+      <button class="send-btn" onclick="sendMessage()">
+        <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="page-footer">
+  <button class="reset-btn" onclick="resetChat()">↺ Nova conversa</button>
+  <div class="footer-tag">Desenvolvido com Claude Code · Opensquad</div>
+</div>
+
+<script>
+// ─── SCRIPTS DO BOT ───────────────────────────────────────────────────────────
+
+const SCRIPTS = {
+  boasVindas: `Olá! Bem-vindo ao Java Joe's Pizzaria e Bistrô! 🍕
+
+Meu nome é Giovana, fico feliz em te atender! Como posso te ajudar hoje?
+
+1 - Nosso espaço
+2 - Valores e funcionamento
+3 - Reservas
+4 - Localização e endereço
+5 - Informações sobre o rodízio e à la carte`,
+
+  op1: `O Java Joe's é uma pizzaria com ambiente familiar e aconchegante, ideal para curtir com amigos e família. Nosso salão tem capacidade para cerca de 120 pessoas, com área kids de 18m² de muita diversão, oferecemos uma experiência completa com pizzas, massas, bebidas e sobremesas. 🍕
+
+Posso te ajudar com mais alguma coisa?`,
+
+  op2: `💰 Rodízio (pizzas + massas + refil de bebidas):
+
+Terça a quinta: R$ 59,99 com refil incluso (acima de 10 anos) *Exceto véspera de Feriado e Feriado*
+Sexta a domingo: R$ 64,99 (acima de 10 anos) + refil R$ 14,99 (opcional) *Valor válido para véspera de feriado e feriado*
+
+Crianças de 04 a 09 anos: R$ 43,99
+
+🕒 Funcionamento:
+Terça a Domingo: 18h às 23h
+🚫 Segunda-feira: fechado
+✅ Funcionamos normalmente nos feriados
+
+Posso te ajudar com mais alguma coisa?
+0 - Voltar ao menu principal`,
+
+  op3_info: `Garanta sua mesa no Java Joe's e venha viver uma experiência incrível com a gente! 🍕
+
+📌 Condições para reserva:
+Mínimo de 4 pessoas
+Máximo de 50 pessoas
+
+🎂 Aniversariante da semana TEM BENEFÍCIO ESPECIAL:
+Com 10 convidados ou mais, o aniversariante ganha o rodízio por nossa conta! (desconto pessoal e intransferível)
+
+Pode trazer:
+🎂 Bolo
+🍬 Docinhos
+🎀 Decoração da mesa
+
+Disponibilizamos 1 balcão para você montar tudo!
+
+⚠️ Importante: a reserva fica garantida até 19h30 — chegue no horário para não perder sua mesa!
+
+Para reservar agora, é só me enviar:
+• Nome e sobrenome
+• Telefone
+• Data
+• Quantidade de pessoas
+
+💡 Dica: finais de semana costumam lotar… garanta sua vaga com antecedência!`,
+
+  op3_confirmar: (nome, data, pessoas) => `Perfeito! Aqui está o resumo da sua reserva:
+👤 Nome: ${nome}
+📅 Data: ${data}
+👥 Pessoas: ${pessoas}
+Deseja confirmar?
+1 - Sim, confirmar
+2 - Alterar informações`,
+
+  diaFechado: `Ops! Infelizmente não funcionamos às segundas-feiras. 😕
+Mas temos mesa disponível de terça a domingo, das 18h às 23h!
+Quer escolher outro dia para sua reserva? 😊`,
+
+  minimoNaoAtingido: `Nossas reservas são para grupos a partir de 4 pessoas. 😊
+Para grupos menores, fique à vontade para vir sem reserva — sempre tentamos acomodar nossos clientes!
+⚠️ Lembrando que a disponibilidade depende do movimento do dia.
+Posso te ajudar com mais alguma coisa?`,
+
+  maximoUltrapassado: `Para grupos acima de 50 pessoas, o atendimento é feito diretamente com nossa equipe. 😊
+Um de nossos atendentes entrará em contato para organizar tudo com você!`,
+
+  op3_confirmado: `✅ Reserva confirmada! Te esperamos no Java Joe's. 🍕
+⚠️ Lembrete: chegue até as 19h30 para confirmar sua mesa presencialmente. Reservas não confirmadas até esse horário podem ser liberadas para outros clientes.
+Qualquer dúvida, é só chamar!`,
+
+  op4: `Estamos localizados em:
+📍 Rua Jagroaba, 262 — Vila Valqueire, Rio de Janeiro
+🚗 Estacionamento: há vagas disponíveis nas ruas ao redor do restaurante.
+🗺️ Google Maps: https://maps.app.goo.gl/vUYaStfhhLQZNYBY7
+Te esperamos! Qualquer dúvida, é só chamar. 😊`,
+
+  op5: `Aqui no Java Joe's você escolhe como quer aproveitar:
+
+🍕 Rodízio:
+Mais de 30 sabores de pizzas (salgadas e doces) + massas variadas + acompanhamentos + refil de bebidas.
+
+🍽️ À la carte:
+Pizzas nos tamanhos 27cm, 35cm e 40cm, além de massas, entradas e sobremesas incríveis do nosso cardápio.
+
+Quer conferir o cardápio completo? Um de nossos atendentes enviará para você pelo WhatsApp! 😊
+Posso te ajudar com mais alguma coisa?`,
+
+  cancelar_solicitar: `Tudo bem, sem problemas! 😊
+Para cancelar sua reserva, me informe:
+• Seu nome completo
+• Data da reserva`,
+
+  cancelar_confirmado: `Reserva cancelada com sucesso! ✅
+Sentiremos sua falta, mas esperamos te receber em breve no Java Joe's. 🍕
+Qualquer coisa, é só chamar. Até a próxima!`,
+
+  atendente: `Claro! Vou te conectar com um de nossos atendentes agora. 👋
+Um momento, por favor. Nossa equipe retornará em breve.`,
+
+  menuOpcoes: `Posso te ajudar com:
+
+1 - Nosso espaço
+2 - Valores e funcionamento
+3 - Reservas
+4 - Localização e endereço
+5 - Informações sobre o rodízio e à la carte`,
+
+  fallback: `Hmm, não sei se consigo te ajudar com isso. 😊
+Mas posso te ajudar com:
+
+1 - Nosso espaço
+2 - Valores e funcionamento
+3 - Reservas
+4 - Localização e endereço
+5 - Informações sobre o rodízio e à la carte`,
+
+  faq: {
+    pagamento: `Aceitamos todas as formas de pagamento: cartão de crédito, débito, PIX e vale-refeição/alimentação. 😊
+Posso te ajudar com mais alguma coisa?`,
+    vegetariano: `Sim! Temos opções vegetarianas no cardápio. 🥗
+Nossos garçons terão prazer em te orientar na sua visita.
+Posso te ajudar com mais alguma coisa?`,
+    glutenLactose: `Infelizmente não temos opções sem glúten ou sem lactose no momento.
+Posso te ajudar com mais alguma coisa?`,
+    meiaPorte: `Sim, trabalhamos com meia-porção! 😊
+Para mais detalhes, nossos garçons poderão te orientar na sua visita.
+Posso te ajudar com mais alguma coisa?`,
+    preco: `Hmm, não sei te informar um valor médio exato, pois depende muito do que for pedido. 😊
+Para ter uma ideia melhor, você pode conferir nosso cardápio — é só escolher a opção 4 e um atendente enviará para você!
+Posso te ajudar com mais alguma coisa?`,
+    sinal: `Não cobramos nenhum sinal para reservas! 😊
+Pedimos apenas que chegue até as 19h30 para confirmar sua mesa presencialmente.
+Posso te ajudar com mais alguma coisa?`,
+    semReserva: `Sim! Sempre tentamos acomodar nossos clientes, mesmo sem reserva. 😊
+⚠️ Lembrando que a disponibilidade depende do movimento do dia, então não garantimos mesa. Para garantir o seu lugar, recomendamos fazer uma reserva!
+Posso te ajudar com mais alguma coisa?`,
+    espera: `O tempo de espera varia de acordo com o movimento do dia. 😊
+Para garantir sua mesa e evitar espera, recomendamos fazer uma reserva!
+Posso te ajudar com mais alguma coisa?`,
+    bolo: `Sim, pode trazer seu bolo! 🎂😊
+Posso te ajudar com mais alguma coisa?`,
+    decoracao: `No momento não oferecemos serviço de decoração, mas você pode trazer sua própria decoração! 🎉
+Posso te ajudar com mais alguma coisa?`,
+    grupoMenu: `No momento não temos um menu especial para grupos, mas temos um cardápio completo com muitas opções para agradar a todos! 😊
+Para grupos acima de 8 pessoas, recomendamos fazer a reserva com pelo menos 48h de antecedência.
+Posso te ajudar com mais alguma coisa?`,
+    wifi: `Infelizmente não temos WiFi disponível. 😊
+Posso te ajudar com mais alguma coisa?`,
+    fumantes: `Sim, temos espaço para fumantes! 🚬
+Posso te ajudar com mais alguma coisa?`,
+    cadeirante: `Infelizmente nosso espaço ainda não é totalmente acessível para cadeirantes. Pedimos desculpas pela limitação. 🙏
+Posso te ajudar com mais alguma coisa?`,
+    musica: `No momento não temos música ao vivo ou DJ. 😊
+Posso te ajudar com mais alguma coisa?`,
+    delivery: `Fazemos entregas somente pelo iFood! 🛵
+Nos encontre lá e aproveite nossas opções no conforto da sua casa. 😊
+Posso te ajudar com mais alguma coisa?`,
+    kids: `Sim, temos área kids! 🎉
+Nosso espaço é ótimo para toda a família. As crianças ficam à vontade enquanto vocês aproveitam a refeição.
+
+E vem novidade por aí! 🎉 Em breve abre o Java Kids — um espaço feito especialmente para as crianças se divertirem enquanto a família aproveita o melhor da nossa pizza e do nosso bistrô. O Java Kids vai contar com campo de futebol, rodízio infantil e muito mais! 🍕⚽ Quer ficar por dentro de tudo antes da inauguração? Segue a gente no Instagram: 👉 instagram.com/javajoespizzariakids
+
+Posso te ajudar com mais alguma coisa?`,
+    pets: `Infelizmente não aceitamos animais de estimação no restaurante, por questões de higiene e segurança alimentar. 🐾
+Agradecemos a compreensão!
+
+Posso te ajudar com mais alguma coisa?`,
+  }
+};
+
+// ─── ESTADO DA CONVERSA ───────────────────────────────────────────────────────
+
+let state = {
+  step: 'idle', // idle | menu | reserva_dados | reserva_confirm | cancelar_dados
+  reserva: {}
+};
+
+function resetState() {
+  state = { step: 'idle', reserva: {} };
+}
+
+// ─── LÓGICA DO BOT ────────────────────────────────────────────────────────────
+
+function normalize(text) {
+  return text.toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^\w\s]/g, ' ').trim();
+}
+
+function has(text, ...words) {
+  return words.some(w => text.includes(w));
+}
+
+// Verifica se a mensagem é uma FAQ — retorna resposta ou null
+function verificarFAQ(msg, userMsg) {
+  if (has(msg, 'pix', 'cartao', 'pagamento', 'credito', 'debito', 'vr', 'va', 'vale refeicao', 'vale alimentacao')) return SCRIPTS.faq.pagamento;
+  if (has(msg, 'vegetariano', 'vegano', 'vegetariana', 'vegana')) return SCRIPTS.faq.vegetariano;
+  if (has(msg, 'gluten', 'lactose', 'intolerante')) return SCRIPTS.faq.glutenLactose;
+  if (has(msg, 'meia porcao', 'meia-porcao', 'metade')) return SCRIPTS.faq.meiaPorte;
+  if (has(msg, 'sinal', 'deposito', 'pagar para reservar')) return SCRIPTS.faq.sinal;
+  if (has(msg, 'sem reserva', 'sem marcar', 'chegar sem')) return SCRIPTS.faq.semReserva;
+  if (has(msg, 'espera', 'fila', 'esperar')) return SCRIPTS.faq.espera;
+  if (has(msg, 'bolo', 'docinho', 'trazer bolo')) return SCRIPTS.faq.bolo;
+  if (has(msg, 'decoracao', 'enfeite', 'balao', 'decorar')) return SCRIPTS.faq.decoracao;
+  if (has(msg, 'wifi', 'internet', 'senha wifi')) return SCRIPTS.faq.wifi;
+  if (has(msg, 'fumante', 'fumar', 'cigarro')) return SCRIPTS.faq.fumantes;
+  if (has(msg, 'cadeirante', 'acessivel', 'acessibilidade', 'cadeira de rodas')) return SCRIPTS.faq.cadeirante;
+  if (has(msg, 'musica ao vivo', 'banda', 'dj', 'show')) return SCRIPTS.faq.musica;
+  if (has(msg, 'delivery', 'entrega', 'ifood', 'entregar')) return SCRIPTS.faq.delivery;
+  if (has(msg, 'kids', 'crianca', 'criancas', 'area infantil', 'filho')) return SCRIPTS.faq.kids;
+  if (has(msg, 'cachorro', 'gato', 'pet', 'animal', 'bicho', 'cao', 'dog')) return SCRIPTS.faq.pets;
+  return null;
+}
+
+// Verifica campos faltantes e pergunta um a um; quando completo, mostra resumo
+function avancarReserva() {
+  const { nome, data, pessoas } = state.reserva;
+
+  if (!nome) {
+    state.step = 'reserva_aguarda_nome';
+    return 'Qual é o seu nome completo? 😊';
+  }
+  if (!data) {
+    state.step = 'reserva_aguarda_data';
+    return 'Qual a data desejada para a reserva?';
+  }
+  if (!pessoas) {
+    state.step = 'reserva_aguarda_pessoas';
+    return 'Para quantas pessoas será a reserva?';
+  }
+
+  const qtd = parseInt(pessoas);
+  if (!isNaN(qtd) && qtd < 4) {
+    state.step = 'menu';
+    return SCRIPTS.minimoNaoAtingido;
+  }
+  if (!isNaN(qtd) && qtd > 50) {
+    state.step = 'menu';
+    return SCRIPTS.maximoUltrapassado;
+  }
+
+  state.step = 'reserva_confirm';
+  return SCRIPTS.op3_confirmar(nome, data, pessoas);
+}
+
+// Tenta rotear número de menu — retorna resposta ou null
+function rotearMenuNumero(msg) {
+  if (msg === '1') { state.step = 'menu'; return SCRIPTS.op1; }
+  if (msg === '2') { state.step = 'menu'; return SCRIPTS.op2; }
+  if (msg === '3') { state.step = 'reserva_dados'; return SCRIPTS.op3_info; }
+  if (msg === '4') { state.step = 'menu'; return SCRIPTS.op4; }
+  if (msg === '5') { state.step = 'menu'; return SCRIPTS.op5; }
+  return null;
+}
+
+function getBotReply(userMsg) {
+  const msg = normalize(userMsg);
+
+  // Se o cliente digitar um número de menu enquanto está em qualquer fluxo de reserva, escapar
+  const emFluxoReserva = ['reserva_dados', 'reserva_aguarda_nome', 'reserva_aguarda_data', 'reserva_aguarda_pessoas'].includes(state.step);
+  if (emFluxoReserva) {
+    const menuResp = rotearMenuNumero(msg);
+    if (menuResp) { state.reserva = {}; return menuResp; }
+  }
+
+  if (state.step === 'reserva_confirm') {
+    if (msg === '1' || has(msg, 'sim', 'confirmar', 'ok', 'pode', 'isso')) {
+      if (state.reserva._segunda) {
+        state.step = 'reserva_aguarda_data';
+        return SCRIPTS.diaFechado;
+      }
+      state.step = 'menu';
+      return SCRIPTS.op3_confirmado;
+    }
+    if (msg === '2' || has(msg, 'alterar', 'mudar', 'corrigir', 'nao')) {
+      state.step = 'reserva_dados';
+      return 'Claro! Me informe novamente os dados corretos:\n• Seu nome completo\n• Data desejada\n• Quantidade de pessoas';
+    }
+  }
+
+  if (state.step === 'reserva_aguarda_nome') {
+    const faq = verificarFAQ(msg, userMsg);
+    if (faq) return faq;
+    state.reserva.nome = userMsg.trim() || state.reserva.nome;
+    return avancarReserva();
+  }
+
+  if (state.step === 'reserva_aguarda_data') {
+    const faq = verificarFAQ(msg, userMsg);
+    if (faq) return faq;
+    const _segunda = isSegunda(userMsg);
+    if (_segunda) {
+      state.step = 'reserva_aguarda_data';
+      return SCRIPTS.diaFechado;
+    }
+    state.reserva.data = extrairData(userMsg) || userMsg.trim();
+    return avancarReserva();
+  }
+
+  if (state.step === 'reserva_aguarda_pessoas') {
+    const faq = verificarFAQ(msg, userMsg);
+    if (faq) return faq;
+    const p = extrairPessoas(userMsg) || userMsg.trim();
+    state.reserva.pessoas = p;
+    return avancarReserva();
+  }
+
+  if (state.step === 'reserva_dados') {
+    const nome = extrairNome(userMsg) || state.reserva.nome || null;
+    const data = extrairData(userMsg) || state.reserva.data || null;
+    const pessoas = extrairPessoas(userMsg) || state.reserva.pessoas || null;
+    const _segunda = isSegunda(userMsg);
+    if (_segunda) {
+      state.reserva = { nome, data: null, pessoas, _segunda: true };
+      state.step = 'reserva_aguarda_data';
+      return SCRIPTS.diaFechado;
+    }
+    state.reserva = { nome, data, pessoas, _segunda: false };
+    return avancarReserva();
+  }
+
+  if (state.step === 'cancelar_dados') {
+    state.step = 'menu';
+    return SCRIPTS.cancelar_confirmado;
+  }
+
+  const faqResp = verificarFAQ(msg, userMsg);
+  if (faqResp) return faqResp;
+
+  if (has(msg, 'preco', 'valor', 'quanto custa', 'caro', 'barato'))
+    return SCRIPTS.op5;
+
+  const menuNumero = rotearMenuNumero(msg);
+  if (menuNumero) return menuNumero;
+
+  if (has(msg, 'nosso espaco', 'espaco', 'ambiente', 'salao', 'capacidade', 'estrutura')) { state.step = 'menu'; return SCRIPTS.op1; }
+  if (has(msg, 'valores', 'horario', 'funcionamento', 'que horas', 'abre', 'fecha')) { state.step = 'menu'; return SCRIPTS.op2; }
+  if (has(msg, 'reserva', 'reservar', 'fazer reserva', 'quero reserva')) { state.step = 'reserva_dados'; return SCRIPTS.op3_info; }
+  if (has(msg, 'localizacao', 'endereco', 'onde fica', 'como chegar', 'maps', 'mapa')) { state.step = 'menu'; return SCRIPTS.op4; }
+  if (has(msg, 'rodizio', 'a la carte', 'cardapio', 'sabores', 'pizza', 'massa', 'tamanho')) { state.step = 'menu'; return SCRIPTS.op5; }
+
+  if (has(msg, 'cancelar', 'cancelamento', 'desmarcar', 'desistir')) {
+    state.step = 'cancelar_dados';
+    return SCRIPTS.cancelar_solicitar;
+  }
+
+  if (has(msg, 'atendente', 'humano', 'pessoa real', 'falar com alguem', 'atendimento humano')) {
+    state.step = 'menu';
+    return SCRIPTS.atendente;
+  }
+
+  if (has(msg, 'duvida', 'pergunta', 'quero saber', 'pode me ajudar', 'me ajuda', 'preciso de ajuda', 'ajuda')) {
+    state.step = 'menu';
+    return SCRIPTS.menuOpcoes;
+  }
+
+  const ehSaudacao = has(msg, 'oi', 'ola', 'bom dia', 'boa tarde', 'boa noite', 'tudo bem', 'hello', 'boas');
+  if (ehSaudacao) {
+    state.step = 'menu';
+    return SCRIPTS.boasVindas;
+  }
+
+  if (state.step === 'idle') {
+    state.step = 'menu';
+    return SCRIPTS.boasVindas;
+  }
+
+  state.step = 'menu';
+  return SCRIPTS.fallback;
+}
+
+// ─── VERIFICAÇÃO DE SEGUNDA-FEIRA ─────────────────────────────────────────────
+
+function isSegunda(text) {
+  const lower = text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  // Palavra "segunda" explícita
+  if (/\bsegunda\b/.test(lower)) return true;
+  // Tenta parsear data numérica para verificar dia da semana
+  const meses = { janeiro:0, fevereiro:1, marco:2, abril:3, maio:4, junho:5, julho:6, agosto:7, setembro:8, outubro:9, novembro:10, dezembro:11 };
+  const m = lower.match(/(\d{1,2})\s+de\s+([a-z]+)/);
+  if (m) {
+    const dia = parseInt(m[1]);
+    const mes = meses[m[2]];
+    if (mes !== undefined) {
+      const ano = new Date().getFullYear();
+      const d = new Date(ano, mes, dia);
+      if (d.getDay() === 1) return true; // 1 = segunda-feira
+    }
+  }
+  const m2 = lower.match(/(\d{1,2})\/(\d{1,2})/);
+  if (m2) {
+    const d = new Date(new Date().getFullYear(), parseInt(m2[2]) - 1, parseInt(m2[1]));
+    if (d.getDay() === 1) return true;
+  }
+  return false;
+}
+
+// ─── EXTRATORES SIMPLES ───────────────────────────────────────────────────────
+
+function extrairNome(text) {
+  // 1. Explícito: "nome: João Silva" ou "meu nome é João Silva"
+  const explicito = text.match(/(?:nome[:\s]+|meu nome [eé]\s+)([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s]{2,40}?)(?:\n|,|\.?$)/i);
+  if (explicito) return explicito[1].trim();
+
+  // 2. Nome próprio: linha curta só com palavras iniciadas em maiúscula, sem verbos comuns
+  const verbos = /^(pode|quero|sim|não|nao|oi|olá|ola|tudo|ok|obrigado|isso|claro|então|entao|gostaria|preciso|manda|queria|quero|dia|para|seria|tenho|vou|sou)\b/i;
+  const nomeProprio = text.trim().match(/^([A-ZÁÉÍÓÚÂÊÎÔÛÃÕ][a-záéíóúâêîôûãõç]+(?:\s[A-ZÁÉÍÓÚÂÊÎÔÛÃÕ][a-záéíóúâêîôûãõç]+){1,3})$/);
+  if (nomeProprio && !verbos.test(text.trim())) return nomeProprio[1].trim();
+
+  return null;
+}
+
+function extrairData(text) {
+  const meses = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+  // "29 de março", "dia 29", "29/03", "sexta-feira"
+  const m1 = text.match(/(\d{1,2})\s+de\s+([a-záéíóúâêîôûãõç]+)/i);
+  if (m1) return `${m1[1]} de ${m1[2]}`;
+  const m2 = text.match(/dia\s+(\d{1,2})/i);
+  if (m2) return `dia ${m2[1]}`;
+  const m3 = text.match(/(\d{1,2})\/(\d{1,2})/);
+  if (m3) {
+    const mesNome = meses[parseInt(m3[2]) - 1] || m3[2];
+    return `${m3[1]} de ${mesNome}`;
+  }
+  const diasSemana = ['segunda','terça','quarta','quinta','sexta','sábado','domingo'];
+  for (const dia of diasSemana) {
+    if (text.toLowerCase().includes(dia)) return dia;
+  }
+  return null;
+}
+
+function extrairPessoas(text) {
+  const m = text.match(/(\d+)\s*(?:pessoas?|person|pax|convidados?|adultos?)/i) ||
+            text.match(/(?:somos|éramos|seremos|para)\s+(\d+)/i);
+  return m ? `${m[1]} pessoas` : null;
+}
+
+// ─── UI ───────────────────────────────────────────────────────────────────────
+
+const chat = document.getElementById('chat');
+const input = document.getElementById('msg-input');
+const statusText = document.getElementById('status-text');
+
+input.addEventListener('input', () => {
+  input.style.height = 'auto';
+  input.style.height = Math.min(input.scrollHeight, 100) + 'px';
+});
+
+input.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+});
+
+function getTime() {
+  return new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+}
+
+function escapeHtml(text) {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/\n/g, '<br>');
+}
+
+function addMessage(text, type) {
+  const row = document.createElement('div');
+  row.className = `msg-row ${type}`;
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble';
+  bubble.innerHTML = `${escapeHtml(text)}<span class="time">${getTime()}</span>`;
+  row.appendChild(bubble);
+  chat.appendChild(row);
+  scrollToBottom();
+}
+
+function showTyping() {
+  const row = document.createElement('div');
+  row.className = 'typing-row';
+  row.id = 'typing';
+  row.innerHTML = `<div class="typing-bubble">
+    <div class="typing-dot"></div>
+    <div class="typing-dot"></div>
+    <div class="typing-dot"></div>
+  </div>`;
+  chat.appendChild(row);
+  scrollToBottom();
+}
+
+function removeTyping() {
+  const t = document.getElementById('typing');
+  if (t) t.remove();
+}
+
+function scrollToBottom() {
+  chat.scrollTop = chat.scrollHeight;
+}
+
+function sendMessage() {
+  const text = input.value.trim();
+  if (!text) return;
+
+  input.value = '';
+  input.style.height = 'auto';
+  addMessage(text, 'sent');
+
+  statusText.textContent = 'digitando...';
+  showTyping();
+
+  const delay = 800 + Math.random() * 600;
+  setTimeout(() => {
+    removeTyping();
+    statusText.textContent = 'online';
+    const reply = getBotReply(text);
+    addMessage(reply, 'received');
+  }, delay);
+}
+
+function resetChat() {
+  resetState();
+  chat.innerHTML = '<div class="date-divider"><span>Hoje</span></div>';
+}
+
+// Relógio ao vivo na status bar
+function updateClock() {
+  const el = document.getElementById('clock');
+  if (el) el.textContent = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+}
+updateClock();
+setInterval(updateClock, 10000);
+</script>
+</body>
+</html>

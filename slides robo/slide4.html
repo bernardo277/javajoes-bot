@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Slide 4</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      width: 1080px; height: 1080px;
+      background: #0a0a0a;
+      font-family: 'Segoe UI', sans-serif;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .photo-area {
+      height: 580px;
+      position: relative;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+    .photo-area img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: top;
+      opacity: 1;
+    }
+    .photo-area .overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,0.6) 100%);
+    }
+    .photo-placeholder {
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, #1a1a2e, #16213e);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      color: #444;
+      font-size: 22px;
+      border: 3px dashed #2a2a2a;
+    }
+    .photo-placeholder .icon { font-size: 64px; }
+
+    .content {
+      flex: 1;
+      padding: 32px 60px 40px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    h2 {
+      color: #fff;
+      font-size: 38px;
+      font-weight: 800;
+      line-height: 1.2;
+    }
+
+    .points {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .pt {
+      color: #ccc;
+      font-size: 27px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .badge {
+      display: inline-block;
+      background: #25D366;
+      color: #fff;
+      font-size: 22px;
+      font-weight: 700;
+      padding: 6px 22px;
+      border-radius: 999px;
+      align-self: flex-start;
+      margin-top: 4px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="photo-area">
+    <img src="print2.png" />
+    <div class="overlay"></div>
+  </div>
+
+  <div class="content">
+    <h2>Já em mais de 50 negócios atendidos 🚀</h2>
+    <div class="points">
+      <div class="pt">📌 Confirma reservas automaticamente</div>
+      <div class="pt">📌 Responde às 3h da manhã sem o dono acordado</div>
+      <div class="pt">📌 Salva tudo no sistema — zero trabalho manual</div>
+    </div>
+    <span class="badge">Case real: Java Joe's Pizzaria · Vila Valqueire, RJ</span>
+  </div>
+
+</body>
+</html>

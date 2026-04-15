@@ -1,0 +1,5 @@
+id,name,icon,role,file
+analista,Analista de Atendimento,🔍,Extrai e interpreta dados da mensagem do cliente,agents/analista.agent.md
+gerente-reservas,Gerente de Reservas,📅,Valida e processa a reserva conforme regras do restaurante,agents/gerente-reservas.agent.md
+redator,Redator de Respostas,✍️,Escreve a resposta no tom do Java Joe's,agents/redator.agent.md
+revisor,Revisor de Qualidade,✅,Garante qualidade e precisão da resposta final,agents/revisor.agent.md

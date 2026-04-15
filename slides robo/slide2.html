@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Slide 2</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      width: 1080px; height: 1080px;
+      background: linear-gradient(135deg, #0d1117 0%, #141e14 100%);
+      font-family: 'Segoe UI', sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 80px;
+      gap: 48px;
+      overflow: hidden;
+    }
+
+    h2 {
+      color: #fff;
+      font-size: 52px;
+      font-weight: 800;
+      text-align: center;
+      line-height: 1.2;
+    }
+    h2 span { color: #ff6b6b; }
+
+    .items {
+      display: flex;
+      flex-direction: column;
+      gap: 22px;
+      width: 100%;
+    }
+    .item {
+      display: flex;
+      align-items: flex-start;
+      gap: 22px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 20px;
+      padding: 28px 32px;
+    }
+    .item .icon { font-size: 40px; flex-shrink: 0; }
+    .item p { color: #ddd; font-size: 30px; line-height: 1.4; }
+    .item p strong { color: #fff; }
+  </style>
+</head>
+<body>
+
+  <h2>A realidade de quem tem<br>negócio local <span>😓</span></h2>
+
+  <div class="items">
+    <div class="item">
+      <div class="icon">❌</div>
+      <p>Cliente manda mensagem às 23h perguntando horário — <strong>você não responde</strong></p>
+    </div>
+    <div class="item">
+      <div class="icon">❌</div>
+      <p>Você está ocupado, demora 2h. <strong>Ele já foi pra concorrência.</strong></p>
+    </div>
+    <div class="item">
+      <div class="icon">❌</div>
+      <p>Isso acontece <strong>todo dia</strong> em restaurantes, salões, clínicas e lojas.</p>
+    </div>
+  </div>
+
+</body>
+</html>

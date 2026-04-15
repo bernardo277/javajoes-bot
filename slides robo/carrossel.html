@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Carrossel — Bot WhatsApp</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #111;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      font-family: 'Segoe UI', sans-serif;
+      padding: 24px;
+      gap: 16px;
+    }
+
+    .nav {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .nav button {
+      background: #25D366;
+      color: #fff;
+      border: none;
+      padding: 10px 28px;
+      border-radius: 999px;
+      font-size: 15px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: background 0.2s;
+    }
+    .nav button:hover { background: #1ebe58; }
+    .nav button:disabled { background: #333; color: #666; cursor: default; }
+
+    .counter {
+      color: #aaa;
+      font-size: 14px;
+      min-width: 60px;
+      text-align: center;
+    }
+
+    /* Slide container — Instagram square 1080x1080 scaled */
+    .slide-wrapper {
+      width: 540px;
+      height: 540px;
+      position: relative;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.6);
+    }
+
+    .slide {
+      display: none;
+      width: 100%;
+      height: 100%;
+      position: relative;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 36px;
+      text-align: center;
+    }
+    .slide.active { display: flex; }
+
+    /* ── Slide 1 ── */
+    #s1 {
+      background: #0a0a0a;
+      gap: 0;
+    }
+    #s1 .photo-box {
+      width: 100%;
+      height: 300px;
+      border-radius: 12px;
+      overflow: hidden;
+      position: relative;
+      flex-shrink: 0;
+    }
+    #s1 .photo-box img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: top;
+      opacity: 0.75;
+    }
+    #s1 .photo-box .overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to bottom, rgba(0,0,0,0.1), rgba(0,0,0,0.7));
+    }
+    #s1 .tag {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      background: #25D366;
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 999px;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+    #s1 .bottom {
+      padding-top: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    #s1 h1 {
+      color: #fff;
+      font-size: 19px;
+      font-weight: 800;
+      line-height: 1.3;
+    }
+    #s1 h1 span { color: #25D366; }
+    #s1 p {
+      color: #aaa;
+      font-size: 13px;
+    }
+    #s1 .swipe {
+      color: #25D366;
+      font-size: 12px;
+      font-weight: 600;
+      margin-top: 4px;
+      letter-spacing: 0.3px;
+    }
+
+    /* ── Slide 2 ── */
+    #s2 {
+      background: linear-gradient(135deg, #0d1117 0%, #141e14 100%);
+      gap: 20px;
+    }
+    #s2 h2 {
+      color: #fff;
+      font-size: 20px;
+      font-weight: 800;
+      line-height: 1.3;
+    }
+    #s2 h2 span { color: #ff6b6b; }
+    #s2 .items {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      width: 100%;
+      text-align: left;
+    }
+    #s2 .item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 10px;
+      padding: 12px 14px;
+    }
+    #s2 .item .icon { font-size: 18px; flex-shrink: 0; }
+    #s2 .item p { color: #ddd; font-size: 13px; line-height: 1.4; }
+    #s2 .item p strong { color: #fff; }
+
+    /* ── Slide 3 ── */
+    #s3 {
+      background: #0a0a0a;
+      gap: 0;
+      justify-content: flex-start;
+      padding: 0;
+    }
+    #s3 .photo-box {
+      width: 100%;
+      height: 260px;
+      overflow: hidden;
+      position: relative;
+      flex-shrink: 0;
+    }
+    #s3 .photo-box img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: top;
+      opacity: 0.7;
+    }
+    #s3 .photo-box .overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to bottom, rgba(0,0,0,0.2), rgba(0,0,0,0.85));
+    }
+    #s3 .content {
+      padding: 20px 30px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      text-align: left;
+    }
+    #s3 h2 {
+      color: #fff;
+      font-size: 17px;
+      font-weight: 800;
+    }
+    #s3 h2 span { color: #25D366; }
+    #s3 .checks {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    #s3 .check {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: #ddd;
+      font-size: 12px;
+    }
+    #s3 .check::before {
+      content: "✅";
+      font-size: 12px;
+      flex-shrink: 0;
+    }
+
+    /* ── Slide 4 ── */
+    #s4 {
+      background: #0a0a0a;
+      gap: 0;
+      justify-content: flex-start;
+      padding: 0;
+    }
+    #s4 .photo-box {
+      width: 100%;
+      height: 280px;
+      overflow: hidden;
+      position: relative;
+      flex-shrink: 0;
+    }
+    #s4 .photo-box img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: top;
+      opacity: 0.65;
+    }
+    #s4 .photo-box .overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to bottom, rgba(0,0,0,0.1), rgba(0,0,0,0.9));
+    }
+    #s4 .content {
+      padding: 18px 28px 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      text-align: left;
+    }
+    #s4 h2 {
+      color: #fff;
+      font-size: 16px;
+      font-weight: 800;
+    }
+    #s4 .points {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    #s4 .pt {
+      color: #ccc;
+      font-size: 12px;
+      display: flex;
+      align-items: flex-start;
+      gap: 6px;
+    }
+    #s4 .badge {
+      background: #25D366;
+      color: #fff;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 999px;
+      display: inline-block;
+      margin-top: 4px;
+    }
+
+    /* ── Slide 5 ── */
+    #s5 {
+      background: linear-gradient(135deg, #0d1117 0%, #141e14 100%);
+      gap: 18px;
+    }
+    #s5 h2 {
+      color: #fff;
+      font-size: 20px;
+      font-weight: 800;
+    }
+    #s5 h2 span { color: #25D366; }
+    #s5 .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      width: 100%;
+    }
+    #s5 .card {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(37,211,102,0.15);
+      border-radius: 10px;
+      padding: 12px;
+      text-align: left;
+    }
+    #s5 .card .emoji { font-size: 22px; }
+    #s5 .card p {
+      color: #ccc;
+      font-size: 12px;
+      margin-top: 4px;
+      font-weight: 600;
+    }
+
+    /* ── Slide 6 ── */
+    #s6 {
+      background: linear-gradient(135deg, #0d1117 0%, #141e14 100%);
+      gap: 16px;
+    }
+    #s6 h2 {
+      color: #fff;
+      font-size: 20px;
+      font-weight: 800;
+    }
+    #s6 h2 span { color: #25D366; }
+    #s6 .list {
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+      width: 100%;
+      text-align: left;
+    }
+    #s6 .row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: #ddd;
+      font-size: 13px;
+    }
+    #s6 .row .icon {
+      width: 32px;
+      height: 32px;
+      background: rgba(37,211,102,0.12);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      flex-shrink: 0;
+    }
+
+    /* ── Slide 7 ── */
+    #s7 {
+      background: linear-gradient(160deg, #0a2a12 0%, #051008 100%);
+      gap: 14px;
+    }
+    #s7 .logo {
+      width: 60px;
+      height: 60px;
+      background: #25D366;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+    }
+    #s7 h2 {
+      color: #fff;
+      font-size: 21px;
+      font-weight: 800;
+      line-height: 1.2;
+    }
+    #s7 h2 span { color: #25D366; }
+    #s7 p {
+      color: #aaa;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    #s7 .cta-box {
+      background: #25D366;
+      color: #fff;
+      font-size: 14px;
+      font-weight: 700;
+      padding: 12px 28px;
+      border-radius: 999px;
+      letter-spacing: 0.3px;
+    }
+    #s7 .note {
+      color: #555;
+      font-size: 11px;
+    }
+
+    /* dots */
+    .dots {
+      display: flex;
+      gap: 6px;
+    }
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #333;
+      transition: background 0.2s;
+    }
+    .dot.active { background: #25D366; }
+
+    /* placeholder style */
+    .photo-placeholder {
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, #1a1a2e, #16213e);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      color: #555;
+      font-size: 12px;
+      border: 2px dashed #333;
+      border-radius: 8px;
+    }
+    .photo-placeholder .icon { font-size: 32px; }
+  </style>
+</head>
+<body>
+
+  <div class="slide-wrapper">
+
+    <!-- SLIDE 1 -->
+    <div class="slide active" id="s1">
+      <div class="photo-box">
+        <div class="photo-placeholder">
+          <div class="icon">📱</div>
+          <span>Adicione aqui o Screenshot 1<br>(saudação do bot — 03:36)</span>
+        </div>
+        <div class="overlay"></div>
+        <div class="tag">🕓 03:36 da manhã</div>
+      </div>
+      <div class="bottom">
+        <h1>Esse print foi tirado às <span>3h36 da manhã</span> 🌙</h1>
+        <p>O bot já tinha respondido. O dono estava dormindo.</p>
+        <div class="swipe">Arrasta pra ver o que ele faz →</div>
+      </div>
+    </div>
+
+    <!-- SLIDE 2 -->
+    <div class="slide" id="s2">
+      <h2>A realidade de quem<br>tem negócio local <span>😓</span></h2>
+      <div class="items">
+        <div class="item">
+          <div class="icon">❌</div>
+          <p>Cliente manda mensagem às 23h perguntando horário — <strong>você não responde</strong></p>
+        </div>
+        <div class="item">
+          <div class="icon">❌</div>
+          <p>Você está ocupado, demora 2h. <strong>Ele já foi pra concorrência</strong></p>
+        </div>
+        <div class="item">
+          <div class="icon">❌</div>
+          <p>Isso acontece <strong>todo dia</strong> em restaurantes, salões, clínicas e lojas</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 3 -->
+    <div class="slide" id="s3">
+      <div class="photo-box">
+        <div class="photo-placeholder">
+          <div class="icon">📋</div>
+          <span>Adicione aqui o Screenshot 3<br>(rodízio e à la carte)</span>
+        </div>
+        <div class="overlay"></div>
+      </div>
+      <div class="content">
+        <h2>E se seu WhatsApp <span>respondesse sozinho?</span> 🤖</h2>
+        <div class="checks">
+          <div class="check">Responde perguntas</div>
+          <div class="check">Informa cardápio</div>
+          <div class="check">Faz reservas</div>
+          <div class="check">Funciona 24h</div>
+          <div class="check">Checa disponibilidade</div>
+          <div class="check">Chama atendente</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 4 -->
+    <div class="slide" id="s4">
+      <div class="photo-box">
+        <div class="photo-placeholder">
+          <div class="icon">🍕</div>
+          <span>Adicione aqui o Screenshot 2<br>(reservas e benefício aniversariante)</span>
+        </div>
+        <div class="overlay"></div>
+      </div>
+      <div class="content">
+        <h2>Já em mais de 50 negócios atendidos 🚀</h2>
+        <div class="points">
+          <div class="pt">📌 &nbsp;Confirma reservas automaticamente</div>
+          <div class="pt">📌 &nbsp;Responde às 3h da manhã, sem o dono acordado</div>
+          <div class="pt">📌 &nbsp;Salva tudo no sistema — zero trabalho manual</div>
+        </div>
+        <span class="badge">Case real: Java Joe's Pizzaria · Vila Valqueire, RJ</span>
+      </div>
+    </div>
+
+    <!-- SLIDE 5 -->
+    <div class="slide" id="s5">
+      <h2>Funciona para qualquer<br><span>negócio local</span> 🏪</h2>
+      <div class="grid">
+        <div class="card">
+          <div class="emoji">🍽️</div>
+          <p>Restaurantes e bares</p>
+        </div>
+        <div class="card">
+          <div class="emoji">✂️</div>
+          <p>Salões e barbearias</p>
+        </div>
+        <div class="card">
+          <div class="emoji">🏥</div>
+          <p>Clínicas e consultórios</p>
+        </div>
+        <div class="card">
+          <div class="emoji">🛍️</div>
+          <p>Lojas e ateliês</p>
+        </div>
+        <div class="card">
+          <div class="emoji">🏋️</div>
+          <p>Academias e estúdios</p>
+        </div>
+        <div class="card">
+          <div class="emoji">📱</div>
+          <p>Qualquer negócio com WhatsApp</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 6 -->
+    <div class="slide" id="s6">
+      <h2>O que você <span>recebe</span> 📦</h2>
+      <div class="list">
+        <div class="row"><div class="icon">🔧</div>Bot personalizado para o seu negócio</div>
+        <div class="row"><div class="icon">💬</div>Respostas automáticas para perguntas frequentes</div>
+        <div class="row"><div class="icon">📅</div>Sistema de agendamento integrado</div>
+        <div class="row"><div class="icon">📊</div>Painel para ver e gerenciar os atendimentos</div>
+        <div class="row"><div class="icon">🔄</div>Ajustes conforme você precisar</div>
+      </div>
+    </div>
+
+    <!-- SLIDE 7 -->
+    <div class="slide" id="s7">
+      <div class="logo">🤖</div>
+      <h2>Quer um desses para<br>o <span>seu negócio?</span> 👇</h2>
+      <p>Me chama no WhatsApp e conta sobre o seu negócio.<br>Vou te mostrar como ficaria na prática.</p>
+      <div class="cta-box">📲 [seu número aqui]</div>
+      <p class="note">Primeiras vagas com condição especial</p>
+    </div>
+
+  </div>
+
+  <!-- dots -->
+  <div class="dots" id="dots"></div>
+
+  <!-- nav -->
+  <div class="nav">
+    <button id="prev" onclick="mudar(-1)" disabled>← Anterior</button>
+    <span class="counter" id="counter">1 / 7</span>
+    <button id="next" onclick="mudar(1)">Próximo →</button>
+  </div>
+
+  <script>
+    const slides = document.querySelectorAll('.slide');
+    const dotsEl = document.getElementById('dots');
+    let atual = 0;
+
+    // create dots
+    slides.forEach((_, i) => {
+      const d = document.createElement('div');
+      d.className = 'dot' + (i === 0 ? ' active' : '');
+      d.onclick = () => ir(i);
+      dotsEl.appendChild(d);
+    });
+
+    function ir(n) {
+      slides[atual].classList.remove('active');
+      dotsEl.children[atual].classList.remove('active');
+      atual = n;
+      slides[atual].classList.add('active');
+      dotsEl.children[atual].classList.add('active');
+      document.getElementById('counter').textContent = `${atual + 1} / ${slides.length}`;
+      document.getElementById('prev').disabled = atual === 0;
+      document.getElementById('next').disabled = atual === slides.length - 1;
+    }
+
+    function mudar(dir) { ir(atual + dir); }
+
+    // keyboard navigation
+    document.addEventListener('keydown', e => {
+      if (e.key === 'ArrowRight' && atual < slides.length - 1) mudar(1);
+      if (e.key === 'ArrowLeft' && atual > 0) mudar(-1);
+    });
+  </script>
+
+</body>
+</html>

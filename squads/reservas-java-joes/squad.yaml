@@ -1,0 +1,117 @@
+name: Automação de Reservas — Java Joe's
+code: reservas-java-joes
+description: Squad de alta performance para processar mensagens de reserva via WhatsApp e gerar respostas prontas para envio.
+version: 1.0.0
+created: 2026-03-24
+language: Português (Brasil)
+performance_mode: alta-performance
+
+agents:
+  - id: analista
+    file: agents/analista.agent.md
+    execution: inline
+
+  - id: gerente-reservas
+    file: agents/gerente-reservas.agent.md
+    execution: inline
+
+  - id: redator
+    file: agents/redator.agent.md
+    execution: inline
+
+  - id: revisor
+    file: agents/revisor.agent.md
+    execution: inline
+
+pipeline:
+  - step: 1
+    type: checkpoint
+    title: "📩 Mensagem do cliente"
+    description: "Cole aqui a mensagem recebida do cliente no WhatsApp."
+    questions:
+      - id: mensagem_cliente
+        label: "Mensagem do cliente"
+        type: text
+        required: true
+      - id: contexto_extra
+        label: "Há algum contexto adicional? (reserva existente, cliente recorrente, etc.)"
+        type: text
+        required: false
+
+  - step: 2
+    type: agent
+    agent: analista
+    task: extrair-dados
+    input:
+      - mensagem_cliente
+      - contexto_extra
+    output: dados_reserva
+
+  - step: 3
+    type: checkpoint
+    title: "✅ Confirmar dados extraídos"
+    description: "Revise os dados que o Analista extraiu da mensagem do cliente."
+    questions:
+      - id: dados_confirmados
+        label: "Os dados estão corretos?"
+        type: choice
+        options:
+          - "Sim, estão corretos"
+          - "Preciso corrigir algo"
+        required: true
+      - id: correcoes
+        label: "Se precisar corrigir, descreva as correções:"
+        type: text
+        required: false
+
+  - step: 4
+    type: agent
+    agent: gerente-reservas
+    task: validar-reserva
+    input:
+      - dados_reserva
+      - correcoes
+    output: resumo_reserva
+
+  - step: 5
+    type: agent
+    agent: redator
+    task: escrever-resposta
+    input:
+      - resumo_reserva
+      - dados_reserva
+    output: rascunho_resposta
+
+  - step: 6
+    type: checkpoint
+    title: "📝 Aprovar resposta antes de enviar"
+    description: "Revise a resposta gerada para o cliente antes de enviá-la."
+    questions:
+      - id: aprovacao
+        label: "A resposta está boa?"
+        type: choice
+        options:
+          - "Sim, aprovar e finalizar"
+          - "Precisa de ajustes"
+        required: true
+      - id: ajustes
+        label: "Se precisar ajustar, descreva o que mudar:"
+        type: text
+        required: false
+
+  - step: 7
+    type: agent
+    agent: revisor
+    task: revisao-final
+    input:
+      - rascunho_resposta
+      - aprovacao
+      - ajustes
+    output: resposta_final
+
+  - step: 8
+    type: output
+    title: "🎉 Resposta pronta para enviar!"
+    description: "Copie a resposta abaixo e envie no WhatsApp."
+    source: resposta_final
+    save_to: "_memory/memories.md"
