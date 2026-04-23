@@ -61,8 +61,9 @@ Posso te ajudar com mais alguma coisa?
 
   op2: `💰 Rodízio (pizzas + massas + refil de bebidas):
 
-Terça a quinta: R$ 59,99 com refil incluso (acima de 10 anos)
-Sexta a domingo: R$ 64,99 (acima de 10 anos) + refil R$ 14,99 (opcional)
+Terça a quinta: R$ 59,99 com refil incluso (acima de 10 anos) *Exceto véspera de feriado e feriado*
+
+Sexta a domingo: R$ 64,99 (acima de 10 anos) + refil R$ 14,99  *Valor válido para feriado e véspera de feriado*
 
 Crianças de 04 a 09 anos: R$ 43,99
 
@@ -949,7 +950,7 @@ app.post('/webhook', async (req, res) => {
     // Se é fromMe mas a mensagem é um comando do dono (ex: "55219... | resposta")
     // isso acontece quando o Z-API está conectado no celular do dono
     const textFromMe = _textRaw?.trim() || '';
-    const isComandoDono = /^(\d{10,15})\s*[|\/]/.test(textFromMe) ||
+    const isComandoDono = /^(\d{7,15})\s*[|\/]/.test(textFromMe) ||
       /^(ok|nao|não|bot|reserva|status|ping)\b/i.test(textFromMe) ||
       textFromMe === '191088';
 
@@ -1037,8 +1038,8 @@ app.post('/webhook', async (req, res) => {
       return;
     }
 
-    // Comando: "ok NUMERO" — aprova sugestão para cliente específico
-    const matchOk = text.trim().match(/^ok\s+(\d{10,15})$/i);
+    // Comando: "ok NUMERO" ou "ok/ NUMERO" — aprova sugestão para cliente específico
+    const matchOk = text.trim().match(/^ok[\s\/]+(\d{7,15})$/i);
     if (matchOk) {
       const alvo = matchOk[1].replace(/\D/g, '').replace(/^(?!55)(\d{10,11})$/, '55$1');
       const alvoKey = pendingBotReplies[alvo]
@@ -1069,8 +1070,8 @@ app.post('/webhook', async (req, res) => {
       // nenhuma pendente — cai no relay normal
     }
 
-    // Comando: "nao NUMERO" — recusa sugestão para cliente específico
-    const matchNao = text.trim().match(/^n[aã]o\s+(\d{10,15})$/i);
+    // Comando: "nao NUMERO" ou "nao/ NUMERO" — recusa sugestão para cliente específico
+    const matchNao = text.trim().match(/^n[aã]o[\s\/]+(\d{7,15})$/i);
     if (matchNao) {
       const alvo = matchNao[1].replace(/\D/g, '').replace(/^(?!55)(\d{10,11})$/, '55$1');
       const alvoKey = pendingBotReplies[alvo]
@@ -1102,10 +1103,16 @@ app.post('/webhook', async (req, res) => {
     }
 
     // Formato explícito: "numero | mensagem" ou "numero/ mensagem"
-    const match = text.match(/^(\d{10,15})\s*[|\/]\s*(.+)$/s);
+    const match = text.match(/^(\d{7,15})\s*[|\/]\s*(.+)$/s);
     if (match) {
       const clientePhoneRaw = match[1].trim();
-      const clientePhone = clientePhoneRaw.replace(/^(?!55)(\d{10,11})$/, '55$1');
+      // Tenta normalizar com prefixo 55 para 10-11 dígitos
+      let clientePhone = clientePhoneRaw.replace(/^(?!55)(\d{10,11})$/, '55$1');
+      // Busca fuzzy: se não encontrou no estado, procura por sufixo (número parcial)
+      const clienteKey = userStates[clientePhone]
+        ? clientePhone
+        : Object.keys(userStates).find(k => k !== DONO_PHONE && k.endsWith(clientePhoneRaw.slice(-8)));
+      if (clienteKey) clientePhone = clienteKey;
       const resposta = match[2].trim();
       console.log(`[${new Date().toLocaleTimeString()}] 📨 Relay dono→cliente: ${clientePhone} | "${resposta.slice(0,40)}"`);
       await enviarMensagem(clientePhone, resposta, true);
